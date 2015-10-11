@@ -271,6 +271,10 @@ class LocalBucket {
 			return $this->path . "/";
 		}
 
+		if (substr($path, -7) == ".ignore") {
+			$path = substr($path, 0, -7);
+		}
+
 		if ($path[0] != "/") {
 			throw new Exception("Invalid path - must start with slash (/)");
 		}

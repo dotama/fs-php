@@ -14,7 +14,7 @@ fi
 
 case $action in
 get)
-  ${basecurl}${path}
+  ${basecurl}${path}.ignore
   ;;
 ls)
   ${basecurl}/?prefix=${path} | jq .
@@ -26,7 +26,7 @@ push)
   if [ ! -z "$2" ]; then
      acl="X-ACL: $2"
   fi
-  ${basecurl}${path} -XPUT --data-binary @$file -H"$acl" -H'Content-Type: application/octet-stream' 
+  ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"$acl" -H'Content-Type: application/octet-stream' 
   ;;
 set)
   content=$1
@@ -35,10 +35,10 @@ set)
   if [ ! -z "$2" ]; then
      acl="X-ACL: $2"
   fi
-  ${basecurl}${path} -XPUT -H'Content-Type: text/plain' -H"$acl" --data-ascii "${content}"
+  ${basecurl}${path}.ignore -XPUT -H'Content-Type: text/plain' -H"$acl" --data-ascii "${content}"
   ;;
 delete)
-  ${basecurl}${path} -XDELETE
+  ${basecurl}${path}.ignore -XDELETE
   ;;
 url)
   echo ${url}${path}
