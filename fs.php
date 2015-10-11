@@ -3,7 +3,7 @@
 $DOC = <<<EOS
 # fs.php
  
-A simple PHP endpoint for pushing and pulling files via HTTP.
+A simple one-file PHP endpoint for pushing and pulling files via HTTP.
 It supports 4 basic operations:
  * Query for files with a certain prefix (like S3)
  * Upload a file by name
@@ -177,7 +177,6 @@ class LocalBucket {
 	}
 
 	public function listObjects($prefix, &$result) {
-		
 		$path = $this->toDiskPath($prefix);
 		#echo ">  $prefix\n>> $path\n"; 
 		$files = glob($path . '*', GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE);
@@ -197,8 +196,6 @@ class LocalBucket {
 	public function getObjectInfo($key) {
 		$diskPath = $this->toDiskPath($key);
 		$stat = stat($diskPath);
-
-		#echo json_encode($stat) . "\n";
 
 		$time = new DateTime('now', new DateTimeZone('UTC'));
 		$time->setTimestamp($stat['mtime']);

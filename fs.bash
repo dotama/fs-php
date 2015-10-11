@@ -26,7 +26,7 @@ push)
   if [ ! -z "$2" ]; then
      acl="$2"
   fi
-  ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: $acl" -H'Content-Type: application/octet-stream' 
+  ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: $acl" -H'Content-Type: application/octet-stream'
   ;;
 set)
   content=$1
