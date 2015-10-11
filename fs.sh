@@ -22,11 +22,20 @@ ls)
 push)
   file=$1
 
-  ${basecurl}${path} -XPUT -d@$file -H'Content-Type: application/octet-stream'
+  acl=
+  if [ ! -z "$2" ]; then
+     acl="X-ACL: $2"
+  fi
+  ${basecurl}${path} -XPUT -d@$file -H'Content-Type: application/octet-stream' -H"$acl"
   ;;
 set)
   content=$1
-  ${basecurl}${path} -XPUT -d "$content" -H'Content-Type: text/plain'
+
+  acl=
+  if [ ! -z "$2" ]; then
+     acl="X-ACL: $2"
+  fi
+  ${basecurl}${path} -XPUT -H'Content-Type: text/plain' -H"$acl" -d "${content}"
   ;;
 delete)
   ${basecurl}${path} -XDELETE
@@ -37,10 +46,10 @@ url)
 *)
   self=$(basename $0)
   echo "$self ls [prefix]"
+  echo "$self push KEY FILEPATH [ACL]"
+  echo "$self set KEY CONTENT [ACL]"
   echo "$self get KEY"
   echo "$self delete KEY"
-  echo "$self push KEY FILEPATH"
-  echo "$self set KEY CONTENT"
   echo "$self url KEY"
   exit 1
 esac
