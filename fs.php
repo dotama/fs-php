@@ -32,6 +32,9 @@ rewrite the URLs. You may need to modify the initial `handleRequest` method to m
 $ baseurl = "http://whereever.your.fs.php.lives/path/fs.php"
 ```
 
+As a workaround to some http servers, all object keys can optionally end in `.ignore` which will be dropped when
+reading/writing. `fs.bash` appends this automatically to all routes.
+
 ### Authentication
 
 Authentication is managed via http basic auth. See `Configuration` for more details.
