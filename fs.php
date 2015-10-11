@@ -50,8 +50,8 @@ $ curl \$baseurl/?prefix=/
 	"prefix": "/",
 	"delimiter": "/",
 	"objects": [
-		{"key": "/api.md", "size": 100, "mtime": "2015-10-10T19:00:00Z"},
-		{"key": "/README.md", "size": 100, "mtime": "2015-10-10T19:00:00Z"}
+		{"key": "/api.md", "acl":"public-read", "size": 100, "mtime": "2015-10-10T19:00:00Z", "mime": "plain/text"},
+		{"key": "/README.md", "acl": "public-read", size": 100, "mtime": "2015-10-10T19:00:00Z", "mime": "plain/text"}
 	]
 }
 ```
