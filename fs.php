@@ -10,7 +10,7 @@ It supports 4 basic operations:
  * Fetch a file by name
  * Delete a file by name
 
-The idea is similar to S3 - do not manage folders but just objects(files). 
+The idea is similar to S3 - do not manage folders but just objects(files).
 
 ## Configuration
 
@@ -62,17 +62,21 @@ $ curl \$baseurl/api.md
 <this content>
 ```
 
-A `404 Not Found` will be returned, if the given key does not exist. Otherwise a `200 OK`.
+A `404 Not Found` will be returned, if the given key does not exist. Otherwise a `200 OK`. If the file has the `public-read`
+acl, no authorization is required.
 
 ### Create an Object
 
-Simply use `PUT` with the desired key and provide the 
+Simply use `PUT` with the desired key and provide the content in the body.
 
 ```
 $ curl \$baseurl/demo.md -XPUT -d 'This is the new content'
 ```
 
 The server responds with a `204 No Content` if the upload was successful.
+
+You can specify a `x-acl` header field, which can be either `private` or `public-read`. `private` is the default.
+When set to `public-read`, _reading_ this file does not require authentication. This is mapped to file permissions.
 
 ### Deleting an Object
 
@@ -84,6 +88,48 @@ $ curl \$baseurl/demo.md -XDELETE
 
 The server responds with a `204 No Content` if the delete was successful. If no such key exists, a `404 Not Found` is returned.
 EOS;
+
+class ACLs {
+	private $acls;
+	private $default;
+	public function ACLs() {
+		$this->acls = array();
+	}
+
+	public function define($name, $mode, $default = false) {
+		$this->acls[$name] = array(
+			'name' => $name,
+			'mode' => $mode
+		);
+
+		if ($default) {
+			$this->default = $name;
+		}
+	}
+
+	public function defaultACL() {
+		return $this->acls[$this->default];
+	}
+
+	public function byName($name) {
+		return $this->acls[$name];
+	}
+
+	public function byMode($mode) {
+		foreach ($this->acls AS $acl) {
+			if ($acl['mode'] == $mode) {
+				return $acl;
+			}
+		}
+		return NULL;
+	}
+
+	public function allowsUnauthorizedRead($aclName) {
+		$acl = $this->byName($aclName);
+		return ($acl['mode'] & 04) > 0;
+	}
+}
+
 
 class KeyManager {
 	private $keys;
@@ -109,8 +155,14 @@ class KeyManager {
 
 class LocalBucket {
 	private $path;
-	public function LocalBucket($path) {
+	private $acls;
+	public function LocalBucket($acls, $path) {
 		$this->path = $path;
+		$this->acls = $acls;
+
+		if (!is_dir($this->path)) {
+			mkdir($this->path, 0777, true);
+		}
 	}
 
 	public function listObjects($prefix, &$result) {
@@ -135,27 +187,44 @@ class LocalBucket {
 		$diskPath = $this->toDiskPath($key);
 		$stat = stat($diskPath);
 
+		#echo json_encode($stat) . "\n";
+
 		$time = new DateTime('now', new DateTimeZone('UTC'));
 		$time->setTimestamp($stat['mtime']);
 
+		$mode = fileperms($diskPath) & 0777;
+		$acl = $this->acls->byMode($mode);
+
 		return array(
-        	'key' => $key,
-        	'size' => $stat['size'],
-        	'mtime' => $time->format(DATE_ATOM)
+			'key' => $key,
+			'size' => $stat['size'],
+			'acl' => $acl['name'],
+			'mtime' => $time->format(DATE_ATOM)
         );
 	}
 
-	public function putObject($path, $data) {
+	public function putObject($path, $data, $aclName = NULL) {
 		$diskPath = $this->toDiskPath($path);
+
+		if ($aclName == NULL) {
+			$acl = $this->acls->defaultACL();
+		} else {
+			$acl = $this->acls->byName($aclName);
+			if ($acl == NULL) {
+				throw new Exception("Invalid ACL: $aclName");
+			}
+		}
 
 		if (is_dir($diskPath)) {
 			throw new Exception("Path exists");
 		}
 
 		$dir = dirname($diskPath);
-		@mkdir($dir);
+		@mkdir($dir, 0777, true);
 
 		file_put_contents($diskPath, $data);
+
+		chmod($diskPath, $acl['mode']);
 	}
 
 	public function getObject($path) {
@@ -215,46 +284,50 @@ class LocalBucket {
 class Server {
 	private $bucket;
 	private $keyManager;
-	public function Server($bucket, $keyManager) {
+	private $acls;
+	public function Server($bucket, $keyManager, $acls) {
 		$this->bucket = $bucket;
 		$this->keyManager = $keyManager;
+		$this->acls = $acls;
 	}
 
 	public function handleRequest($host, $method, $path, $headers, $params) {
-		if (!$this->checkAuthorization($headers)) {
-			header('WWW-Authenticate: Basic realm="fs.php"'); 
-    		header('HTTP/1.0 401 Unauthorized'); 
-    		die("Unauthorized\n");
-		}
+		$this->headers = $headers;
+		$this->params = $params;
+		$this->host = $host;
+		$this->method = $method;
+		$this->path = $path;
 
 		try {
 			if (isset($params['debug'])) {
-				$this->sendDebug($host, $method, $path, $headers, $params);
+				$this->sendDebug();
 				return;
 			}
 			switch ($method) {
 			case "GET":
 				if ($path == "/" || $path == "")
-					$this->handleListObjects($params);
+					$this->handleListObjects();
 				else
-					$this->handleGetObject($path);
+					$this->handleGetObject();
 			case "PUT":
-				$this->handlePutObject($path, file_get_contents('php://input'));
+				$this->handlePutObject();
 			case "DELETE":
-				$this->handleDeleteObject($path);
+				$this->handleDeleteObject();
 			default:
 				header("HTTP/1.0 405 Method Not Allowed");
-				$this->sendDebug($host, $method, $path, $headers, $params);
+				$this->sendDebug();
 			}
 		} catch (Exception $e) {
-			$this->sendError($e);
+			$this->sendError($e, false);
 		}
 	}
 
-	public function handleListObjects($params) {
+	public function handleListObjects() {
+		$this->requiresAuthorization();
+
 		$prefix = "/";
-		if (isset($params['prefix'])) {
-			$prefix = $params['prefix'];
+		if (isset($this->params['prefix'])) {
+			$prefix = $this->params['prefix'];
 		}
 		$result = array();
 		$this->bucket->listObjects($prefix, $result);
@@ -268,8 +341,10 @@ class Server {
 		)));
 	}
 
-	public function handleDeleteObject($path) {
-		$found = $this->bucket->deleteObject($path);
+	public function handleDeleteObject() {
+		$this->requiresAuthorization();
+
+		$found = $this->bucket->deleteObject($this->path);
 
 		if (!$found) {
 			header("HTTP/1.1 404 Not Found");
@@ -280,38 +355,59 @@ class Server {
 		die();
 	}
 
-	public function handlePutObject($path, $stream) {
-		$this->bucket->putObject($path, $stream);
+	public function handlePutObject() {
+		$this->requiresAuthorization();
+
+		$acl = NULL;
+		if (!empty($this->headers['x-acl'])) {
+			$acl = $this->headers['x-acl'];
+		}
+
+		$stream = file_get_contents('php://input');
+		$this->bucket->putObject($this->path, $stream, $acl);
 
 		header("HTTP/1.1 201 Created");
 		die();
 	}
 
-	public function handleGetObject($path) {
-		$data = $this->bucket->getObject($path);
+	public function handleGetObject() {
+		$info = $this->bucket->getObjectInfo($this->path);
+	
+		if (!$this->acls->allowsUnauthorizedRead($info['acl'])) {
+			$this->requiresAuthorization();
+		}
+
+		$data = $this->bucket->getObject($this->path);
 
 		if ($data == NULL) {
 			header("HTTP/1.1 404 Not Found");
 			die("Not found");
 		}
 
+		header('x-acl: ' . $info['acl']);
+		header('Content-Length: '. $info['size']);
 		header('Content-Type: binary/octet-stream');
 		header("HTTP/1.1 200 OK");
 		die($data);
 	}
 
 
-	private function sendDebug($host, $method, $path, $headers, $params) {
+	private function sendDebug() {
 		header('Content-Type: text/plain');
 		
-		echo $host . "\n";
-		echo $method ."\n";
-		echo $path ."\n";
-		echo json_encode($headers) . "\n";
-		echo json_encode($params) . "\n";
+		echo $this->host . "\n";
+		echo $this->method ."\n";
+		echo $this->path ."\n";
+		echo json_encode($this->headers) . "\n";
+		echo json_encode($this->params) . "\n";
 	}
-	private function sendError($exception) {
-		header("HTTP/1.1 400 Bad Request");
+
+	private function sendError($exception, $userError) {
+		if ($userError) {
+			header("HTTP/1.1 400 Bad Request");
+		} else {
+			header("HTTP/1.1 500 Internal Server Errror");
+		}
 
 		$response = array(
 			'error' => true,
@@ -321,8 +417,16 @@ class Server {
 		die(json_encode($response));
 	}
 
+	private function requiresAuthorization() {
+		if (!$this->checkAuthorization()) {
+			header('WWW-Authenticate: Basic realm="fs.php"');
+			header('HTTP/1.0 401 Unauthorized');
+			die("Unauthorized\n");
+		}
+	}
+
 	private function checkAuthorization($headers) {
-		$auth = $headers['authorization'];
+		$auth = $this->headers['authorization'];
 
 		$fields = explode(" ", $auth);
 
@@ -342,12 +446,22 @@ class Server {
 	}
 }
 
+function acls() {
+	$acls = new ACLs();
+	$acls->define('public-read', 0664);
+	$acls->define('private', 0660, true);
+	return $acls;
+}
+
 
 function config() {
 	global $DOC;
-	$bucket = new LocalBucket("/home/zeisss/var/data/myfiles");
-	$bucket->putObject('/api.md', $DOC);
-	$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.");
+
+	$acls = acls();
+
+	$bucket = new LocalBucket($acls, "/home/zeisss/var/data/myfiles");
+	$bucket->putObject('/api.md', $DOC, 'public-read');
+	$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
 	#$bucket->putObject('/folder.md', "Hello World");
 	#$bucket->putObject('/folder/test.md', "Hello World");
 	#$bucket->putObject('/folder/test2.md', "Hello World");
@@ -358,7 +472,7 @@ function config() {
 	# Or load the keys from the bucket itself
 	@include($bucket->toDiskPath('/keys.php'));
 
-	return array($keyManager, $bucket);
+	return array($keyManager, $bucket, $acls);
 }
 
 function handleRequest() {
@@ -373,8 +487,8 @@ function handleRequest() {
 		$headers[strtolower($key)] = $value;
 	}
 
-	list($keyManager, $bucket) = config();
-	$server = new Server($bucket, $keyManager);
+	list($keyManager, $bucket, $acls) = config();
+	$server = new Server($bucket, $keyManager, $acls);
 	$server->handleRequest($host, $method, $path, $headers, $params);
 }
 
@@ -382,13 +496,14 @@ function tests() {
 	$keyManager = new KeyManager;
 	$keyManager->addKey('test', 'test');
 
-
-	$bucket = new LocalBucket("./data");
+	$acls = acls();
+	$bucket = new LocalBucket($acls, "./data");
 	
 	$bucket->putObject('/test.txt', "Hello World\nSome lines\nYeah");
 	$bucket->putObject('/folder.txt', "Hello World");
 	$bucket->putObject('/folder/test.txt', "Hello World");
 	$bucket->putObject('/folder/test2.txt', "Hello World");
+	$bucket->putObject('/a/b/c/d.md', 'Deep recursive folder fiels.', 'public-read');
 
 
 	# TESTS
@@ -414,7 +529,7 @@ function tests() {
 			die("Test failed:\nInput: $input\nExpected: $output\nActual: $result\n");
 		}
 	}
-	
+
 	$obj = $bucket->getObjectInfo("/test.txt");
 	echo json_encode($obj);
 
