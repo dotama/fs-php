@@ -205,6 +205,7 @@ class LocalBucket {
 			'key' => $key,
 			'size' => $stat['size'],
 			'acl' => $acl['name'],
+			'mime' => mime_content_type($diskPath),
 			'mtime' => $time->format(DATE_ATOM)
         );
 	}
@@ -237,8 +238,6 @@ class LocalBucket {
 		}
 		fflush($handle);
 		fclose($handle);
-
-
 
 		chmod($diskPath, $acl['mode']);
 	}
@@ -402,7 +401,7 @@ class Server {
 
 		header('x-acl: ' . $info['acl']);
 		header('Content-Length: '. $info['size']);
-		header('Content-Type: binary/octet-stream');
+		header('Content-Type: ' . $info['mime']);
 		header("HTTP/1.1 200 OK");
 		die($data);
 	}
