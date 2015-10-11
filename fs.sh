@@ -22,20 +22,20 @@ ls)
 push)
   file=$1
 
-  acl=
+  acl="-H'X-ACL: private'"
   if [ ! -z "$2" ]; then
      acl="X-ACL: $2"
   fi
-  ${basecurl}${path} -XPUT -d@$file -H'Content-Type: application/octet-stream' -H"$acl"
+  ${basecurl}${path} -XPUT --data-binary @$file -H"$acl" -H'Content-Type: application/octet-stream' 
   ;;
 set)
   content=$1
 
-  acl=
+  acl="-H'X-ACL: private'"
   if [ ! -z "$2" ]; then
      acl="X-ACL: $2"
   fi
-  ${basecurl}${path} -XPUT -H'Content-Type: text/plain' -H"$acl" -d "${content}"
+  ${basecurl}${path} -XPUT -H'Content-Type: text/plain' -H"$acl" --data-ascii "${content}"
   ;;
 delete)
   ${basecurl}${path} -XDELETE

@@ -212,8 +212,8 @@ class LocalBucket {
         );
 	}
 
-	public function putObject($path, $data, $aclName = NULL) {
-		$diskPath = $this->toDiskPath($path);
+	public function putObject($key, $data, $aclName = NULL) {
+		$diskPath = $this->toDiskPath($key);
 
 		if ($aclName == NULL) {
 			$acl = $this->acls->defaultACL();
@@ -225,7 +225,7 @@ class LocalBucket {
 		}
 
 		if (is_dir($diskPath)) {
-			throw new Exception("Path exists", 400);
+			throw new Exception("Cannot create key with same name as common-prefix: $key", 400);
 		}
 
 		$dir = dirname($diskPath);
@@ -343,7 +343,7 @@ class Server {
 		$this->requiresAuthorization();
 
 		$prefix = "/";
-		if (isset($this->params['prefix'])) {
+		if (!empty($this->params['prefix'])) {
 			$prefix = $this->params['prefix'];
 		}
 		$result = array();
