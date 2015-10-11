@@ -1,6 +1,5 @@
 <?php
 
-
 $DOC = <<<EOS
 # fs.php
  
@@ -26,7 +25,7 @@ to authenticate with the API.
 ## API
 
 All requests must go to the `fs.php` script. If you want, you can play around with your webserver and 
-rewrite the URLs. You may need to 
+rewrite the URLs. You may need to modify the initial `handleRequest` method to make it work though.
 
 ```
 $ baseurl = "http://whereever.your.fs.php.lives/path/fs.php"
@@ -42,7 +41,7 @@ Lists all objects in the bucket. Use query parameter `prefix` to define a common
 start with a /. 
 
 ```
-$ curl $baseurl/?prefix=/
+$ curl \$baseurl/?prefix=/
 {
 	"prefix": "/",
 	"delimiter": "/",
@@ -58,7 +57,7 @@ $ curl $baseurl/?prefix=/
 Simply provide the key to the object behind the baseurl. The content-type will be `binary/octet-stream` for now.
 
 ```
-$ curl $baseurl/api.md
+$ curl \$baseurl/api.md
 <this content>
 ```
 
@@ -69,7 +68,7 @@ A `404 Not Found` will be returned, if the given key does not exist. Otherwise a
 Simply use `PUT` with the desired key and provide the 
 
 ```
-$ curl $baseurl/demo.md -XPUT -d 'This is the new content'
+$ curl \$baseurl/demo.md -XPUT -d 'This is the new content'
 ```
 
 The server responds with a `204 No Content` if the upload was successful.
@@ -79,7 +78,7 @@ The server responds with a `204 No Content` if the upload was successful.
 Use `DELETE` to delete an undesired object.
 
 ```
-$ curl $baseurl/demo.md -XDELETE
+$ curl \$baseurl/demo.md -XDELETE
 ```
 
 The server responds with a `204 No Content` if the delete was successful. If no such key exists, a `404 Not Found` is returned.
