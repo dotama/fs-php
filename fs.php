@@ -25,7 +25,8 @@ to authenticate with the API.
 ## API
 
 All requests must go to the `fs.php` script. If you want, you can play around with your webserver and 
-rewrite the URLs. You may need to modify the initial `handleRequest` method to make it work though.
+rewrite the URLs. You may need to modify the initial `handleRequest` method to make it work though. You can add
+`?debug` to the URL to get a simple request dump instead of performing the actual request.
 
 ```
 $ baseurl = "http://whereever.your.fs.php.lives/path/fs.php"
@@ -226,7 +227,6 @@ class Server {
     		die("Unauthorized\n");
 		}
 
-	
 		try {
 			if (isset($params['debug'])) {
 				$this->sendDebug($host, $method, $path, $headers, $params);
@@ -234,7 +234,7 @@ class Server {
 			}
 			switch ($method) {
 			case "GET":
-				if ($path == "/")
+				if ($path == "/" || $path == "")
 					$this->handleListObjects($params);
 				else
 					$this->handleGetObject($path);
@@ -345,16 +345,18 @@ class Server {
 
 function config() {
 	global $DOC;
-	$keyManager = new KeyManager;
-	# Replace this with your own secret credentials
-	$keyManager->addKey('test', 'test');
-
 	$bucket = new LocalBucket("/home/zeisss/var/data/myfiles");
 	$bucket->putObject('/api.md', $DOC);
 	$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.");
 	#$bucket->putObject('/folder.md', "Hello World");
 	#$bucket->putObject('/folder/test.md', "Hello World");
 	#$bucket->putObject('/folder/test2.md', "Hello World");
+
+	$keyManager = new KeyManager;
+	# Replace this with your own secret credentials
+	#   $keyManager->addKey('test', 'test');
+	# Or load the keys from the bucket itself
+	@include($bucket->toDiskPath('/keys.php'));
 
 	return array($keyManager, $bucket);
 }
