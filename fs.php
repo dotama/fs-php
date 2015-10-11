@@ -93,6 +93,8 @@ The server responds with a `204 No Content` if the delete was successful. If no 
 At least on my hoster, PUTing a file with endings like `.txt` or `.gif` returns an early `Method Not Allowed` from the 
 NGinx server.
 
+If pushing binary files with `curl`, set the `Content-Type` header to something binary. Otherwise the server tries to 
+parse the request and throws an error.
 EOS;
 
 class ACLs {
@@ -218,23 +220,23 @@ class LocalBucket {
 		} else {
 			$acl = $this->acls->byName($aclName);
 			if ($acl == NULL) {
-				throw new Exception("Invalid ACL: $aclName");
+				throw new Exception("Invalid ACL: $aclName", 400);
 			}
 		}
 
 		if (is_dir($diskPath)) {
-			throw new Exception("Path exists");
+			throw new Exception("Path exists", 400);
 		}
 
 		$dir = dirname($diskPath);
 		@mkdir($dir, 0777, true);
 
 		if (($handle = @fopen($diskPath, 'wb')) === false) {
-			throw new Exception('Could not write object');
+			throw new Exception('Could not write object', 500);
 		}
 		if (false === fwrite($handle, $data)) {
 			fclose($handle);
-			throw new Exception('Error writing object');
+			throw new Exception('Error writing object', 500);
 		}
 		fflush($handle);
 		fclose($handle);
@@ -362,8 +364,7 @@ class Server {
 		$found = $this->bucket->deleteObject($this->path);
 
 		if (!$found) {
-			header("HTTP/1.1 404 Not Found");
-			die("Not found");
+			$this->sendError(new Exception('Not found', 404), 404);
 		}
 
 		header("HTTP/1.1 204 No Content");
@@ -395,8 +396,7 @@ class Server {
 		$data = $this->bucket->getObject($this->path);
 
 		if ($data == NULL) {
-			header("HTTP/1.1 404 Not Found");
-			die("Not found");
+			$this->sendError(new Exception('Not found', 404), 404);
 		}
 
 		header('x-acl: ' . $info['acl']);
@@ -417,11 +417,17 @@ class Server {
 		echo json_encode($this->params) . "\n";
 	}
 
-	private function sendError($exception, $userError) {
-		if ($userError) {
+	private function sendError($exception, $code = 400) {
+		switch ($code) {
+		case 400:
 			header("HTTP/1.1 400 Bad Request");
-		} else {
+			break;
+		case 404:
+			header("HTTP/1.1 404 Not Found");
+			break;
+		case 500:
 			header("HTTP/1.1 500 Internal Server Errror");
+			break;
 		}
 
 		$response = array(
@@ -429,7 +435,7 @@ class Server {
 			'message' => $exception->getMessage(),
 			'code' => $exception->getCode()
 		);
-		die(json_encode($response));
+		die(json_encode($response)."\n");
 	}
 
 	private function requiresAuthorization() {
