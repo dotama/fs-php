@@ -22,26 +22,30 @@ ls)
 push)
   file=$1
 
-  acl="-H'X-ACL: private'"
+  acl="private"
   if [ ! -z "$2" ]; then
-     acl="X-ACL: $2"
+     acl="$2"
   fi
-  ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"$acl" -H'Content-Type: application/octet-stream' 
+  ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: $acl" -H'Content-Type: application/octet-stream' 
   ;;
 set)
   content=$1
 
-  acl="-H'X-ACL: private'"
+  acl="private"
   if [ ! -z "$2" ]; then
-     acl="X-ACL: $2"
+     acl="$2"
   fi
-  ${basecurl}${path}.ignore -XPUT -H'Content-Type: text/plain' -H"$acl" --data-ascii "${content}"
+  ${basecurl}${path}.ignore -XPUT -H'Content-Type: text/plain' -H"X-ACL: $acl" --data-ascii "${content}"
   ;;
 delete)
   ${basecurl}${path}.ignore -XDELETE
   ;;
 url)
   echo ${url}${path}
+  ;;
+set-acl)
+  acl=$1
+  ${basecurl}${path}.ignore?acl -XPUT --data-ascii ${acl}
   ;;
 *)
   self=$(basename $0)
@@ -51,5 +55,6 @@ url)
   echo "$self get KEY"
   echo "$self delete KEY"
   echo "$self url KEY"
+  echo "$self set-acl KEY ACL"
   exit 1
 esac

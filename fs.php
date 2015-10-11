@@ -244,6 +244,16 @@ class LocalBucket {
 		chmod($diskPath, $acl['mode']);
 	}
 
+	public function updateObjectACL($key, $aclName) {
+		$acl = $this->acls->byName($aclName);
+		if ($acl == NULL) {
+			throw new Exception("Invalid ACL: $aclName", 400);
+		}
+		$diskPath = $this->toDiskPath($key);
+
+		chmod($diskPath, $acl['mode']);
+	}
+
 	public function getObject($path) {
 		$diskPath = $this->toDiskPath($path);
 		if (!file_exists($diskPath)) {
@@ -331,7 +341,12 @@ class Server {
 				else
 					$this->handleGetObject();
 			case "PUT":
-				$this->handlePutObject();
+				if (isset($params['acl'])) {
+					$this->handlePutObjectACL();
+				} else {
+					$this->handlePutObject();	
+				}
+				
 			case "DELETE":
 				$this->handleDeleteObject();
 			default:
@@ -341,6 +356,17 @@ class Server {
 		} catch (Exception $e) {
 			$this->sendError($e, false);
 		}
+	}
+
+	public function handlePutObjectACL() {
+		$this->requiresAuthorization();
+
+		$newACL = file_get_contents('php://input');
+
+		$this->bucket->updateObjectACL($this->path, $newACL);
+
+		header("HTTP/1.1 204 No Content");
+		die();
 	}
 
 	public function handleListObjects() {
