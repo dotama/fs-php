@@ -87,6 +87,12 @@ $ curl \$baseurl/demo.md -XDELETE
 ```
 
 The server responds with a `204 No Content` if the delete was successful. If no such key exists, a `404 Not Found` is returned.
+
+## Known Problems
+
+At least on my hoster, PUTing a file with endings like `.txt` or `.gif` returns an early `Method Not Allowed` from the 
+NGinx server.
+
 EOS;
 
 class ACLs {
@@ -222,7 +228,17 @@ class LocalBucket {
 		$dir = dirname($diskPath);
 		@mkdir($dir, 0777, true);
 
-		file_put_contents($diskPath, $data);
+		if (($handle = @fopen($diskPath, 'wb')) === false) {
+			throw new Exception('Could not write object');
+		}
+		if (false === fwrite($handle, $data)) {
+			fclose($handle);
+			throw new Exception('Error writing object');
+		}
+		fflush($handle);
+		fclose($handle);
+
+
 
 		chmod($diskPath, $acl['mode']);
 	}
@@ -363,8 +379,8 @@ class Server {
 			$acl = $this->headers['x-acl'];
 		}
 
-		$stream = file_get_contents('php://input');
-		$this->bucket->putObject($this->path, $stream, $acl);
+		$data = file_get_contents('php://input');
+		$this->bucket->putObject($this->path, $data, $acl);
 
 		header("HTTP/1.1 201 Created");
 		die();
@@ -425,7 +441,7 @@ class Server {
 		}
 	}
 
-	private function checkAuthorization($headers) {
+	private function checkAuthorization() {
 		$auth = $this->headers['authorization'];
 
 		$fields = explode(" ", $auth);
@@ -460,8 +476,8 @@ function config() {
 	$acls = acls();
 
 	$bucket = new LocalBucket($acls, "/home/zeisss/var/data/myfiles");
-	$bucket->putObject('/api.md', $DOC, 'public-read');
-	$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
+	@$bucket->putObject('/api.md', $DOC, 'public-read');
+	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
 	#$bucket->putObject('/folder.md', "Hello World");
 	#$bucket->putObject('/folder/test.md', "Hello World");
 	#$bucket->putObject('/folder/test2.md', "Hello World");
