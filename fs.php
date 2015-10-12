@@ -437,7 +437,11 @@ class Server {
 		}
 
 		header('x-acl: ' . $info['acl']);
-		header('Content-Length: '. $info['size']);
+		if ($this->method == "GET") {
+			header('Content-Length: '. $info['size']);
+		} else {
+			header("Content-Length: 0");
+		}
 		header('Content-Type: ' . $info['mime']);
 		header("HTTP/1.1 200 OK");
 		if ($this->method == "GET") {

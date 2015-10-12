@@ -47,6 +47,9 @@ set-acl)
   acl=$1
   ${basecurl}${path}.ignore?acl -XPUT --data-ascii ${acl}
   ;;
+head)
+  exec ${basecurl}${path}.ignore -s --ignore-content-length -I -f >/dev/null
+  ;;
 *)
   self=$(basename $0)
   echo "$self ls [prefix]"
