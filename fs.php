@@ -68,6 +68,8 @@ $ curl \$baseurl/api.md
 A `404 Not Found` will be returned, if the given key does not exist. Otherwise a `200 OK`. If the file has the `public-read`
 acl, no authorization is required.
 
+PS: `HEAD` is also supported.
+
 ### Create an Object
 
 Simply use `PUT` with the desired key and provide the content in the body.
@@ -335,6 +337,11 @@ class Server {
 				return;
 			}
 			switch ($method) {
+			case "HEAD":
+				if ($path == "/" || $path == "")
+					$this->sendError(new Exception("HEAD not supported here."), 405);
+				else 
+					$this->handleGetObject();
 			case "GET":
 				if ($path == "/" || $path == "")
 					$this->handleListObjects();
@@ -433,7 +440,11 @@ class Server {
 		header('Content-Length: '. $info['size']);
 		header('Content-Type: ' . $info['mime']);
 		header("HTTP/1.1 200 OK");
-		die($data);
+		if ($this->method == "GET") {
+			die($data);
+		} else {
+			die();
+		}
 	}
 
 
@@ -445,6 +456,7 @@ class Server {
 		echo $this->path ."\n";
 		echo json_encode($this->headers) . "\n";
 		echo json_encode($this->params) . "\n";
+		die();
 	}
 
 	private function sendError($exception, $code = 400) {
@@ -452,8 +464,14 @@ class Server {
 		case 400:
 			header("HTTP/1.1 400 Bad Request");
 			break;
+		case 401:
+			header('HTTP/1.0 401 Unauthorized');
+			break;
 		case 404:
 			header("HTTP/1.1 404 Not Found");
+			break;
+		case 405:
+			header("HTTP/1.1 405 Method Not Allowed");
 			break;
 		case 500:
 			header("HTTP/1.1 500 Internal Server Errror");
@@ -471,8 +489,8 @@ class Server {
 	private function requiresAuthorization() {
 		if (!$this->checkAuthorization()) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
-			header('HTTP/1.0 401 Unauthorized');
-			die("Unauthorized\n");
+
+			$this->sendError(new Exception("Authentication required", 401), 401);
 		}
 	}
 
