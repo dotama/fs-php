@@ -56,6 +56,10 @@ $ curl \$baseurl/?prefix=/
 }
 ```
 
+By default, all objects are listed. If you just want to discover, you can pass `delimiter=/`, which splits the keys
+and list the prefix in the field `common-prefixes`. In combination with the `prefix` parameter this allows to list 
+files and folders easily.
+
 ### Get Object
 
 Simply provide the key to the object behind the baseurl. The content-type will be `binary/octet-stream` for now.
