@@ -1,16 +1,9 @@
 #!/bin/bash
 
-function fscurl() {
-  local url=$1
-  shift
-
-  curl -sS -u${credentials} "${basecurl}${url}" $*
-}
-
 source $HOME/.fscfg
 
 # cli
-basecurl="${url}"
+basecurl="curl -sS -u${credentials} ${url}"
 action=$1
 path=$2
 shift 2
@@ -21,10 +14,10 @@ fi
 
 case $action in
 get)
-  fscurl "${path}.ignore"
+  ${basecurl}${path}.ignore
   ;;
 ls)
-  fscurl "/?prefix=${path}&delimiter=/" | jq .
+  ${basecurl}/?prefix=${path} | jq .
   ;;
 push)
   file=$1
@@ -33,7 +26,7 @@ push)
   if [ ! -z "$2" ]; then
      acl="$2"
   fi
-  fscurl "${path}.ignore" -XPUT --data-binary @$file -H"X-ACL: $acl" -H'Content-Type: application/octet-stream'
+  ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: $acl" -H'Content-Type: application/octet-stream'
   ;;
 set)
   content=$1
@@ -42,21 +35,20 @@ set)
   if [ ! -z "$2" ]; then
      acl="$2"
   fi
-  fscurl "${path}.ignore" -XPUT -H'Content-Type: text/plain' -H"X-ACL: $acl" --data-ascii "${content}"
+  ${basecurl}${path}.ignore -XPUT -H'Content-Type: text/plain' -H"X-ACL: $acl" --data-ascii "${content}"
   ;;
 delete)
-  fscurl "${path}.ignore" -XDELETE
+  ${basecurl}${path}.ignore -XDELETE
   ;;
 url)
-  echo ${basecurl}${path}
+  echo ${url}${path}
   ;;
 set-acl)
   acl=$1
-  fscurl "${path}.ignore?acl" -XPUT --data-ascii ${acl}
+  ${basecurl}${path}.ignore?acl -XPUT --data-ascii ${acl}
   ;;
 head)
-  set -e
-  fscurl "${path}.ignore" -If --ignore-content-length >/dev/null 2>&1
+  exec ${basecurl}${path}.ignore -s --ignore-content-length -I -f >/dev/null
   ;;
 *)
   self=$(basename $0)
