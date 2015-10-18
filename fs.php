@@ -178,19 +178,22 @@ class LocalBucket {
 		}
 	}
 
-	public function listObjects($prefix, &$result) {
+	public function listObjects($prefix, $showCommonPrefixes, &$outObjects, &$outCommonsPrefixes) {
 		$path = $this->toDiskPath($prefix);
 		#echo ">  $prefix\n>> $path\n"; 
 		$files = glob($path . '*', GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE);
 
-		#echo json_encode($files) . "\n";
-
+		#echo json_encode($files) . "\n"
         foreach ($files as $file) {
         	#echo "# $file\n";
         	if (substr($file, -1) == '/') {
-        		$this->listObjects($this->toBucketKey($file), $result);
+				if ($showCommonPrefixes) {
+					$outCommonsPrefixes[] = $this->toBucketKey($file);
+				} else {
+					$this->listObjects($this->toBucketKey($file), $showCommonPrefixes, $outObjects, $outCommonsPrefixes);
+				}
         	} else {
-        		$result[] = $this->getObjectInfo($this->toBucketKey($file));
+				$outObjects[] = $this->getObjectInfo($this->toBucketKey($file));
         	}
         }
 	}
@@ -383,16 +386,32 @@ class Server {
 		if (!empty($this->params['prefix'])) {
 			$prefix = $this->params['prefix'];
 		}
-		$result = array();
-		$this->bucket->listObjects($prefix, $result);
+		$showCommonPrefixes = false;
+		if (!empty($this->params['delimiter'])) {
+			if ($this->params['delimiter'] == '/') {
+				$showCommonPrefixes = true;
+			} else {
+				$this->sendError(new Exception('Invalid parameter: Parameter "delimiter" only supports "/"', 400), 400);
+			}
+		}
+		$outObjects = array();
+		$outCommonsPrefixes = array();
+		$this->bucket->listObjects($prefix, $showCommonPrefixes, $outObjects, $outCommonsPrefixes);
 
+		$response = array();
+		$response['prefix'] = $prefix;
+		if ($showCommonPrefixes) {
+			$response['delimiter'] = $this->params['delimiter'];
+		}
+		if (!empty($outObjects)) {
+			$response['objects'] = $outObjects;
+		}
+		if (!empty($outCommonsPrefixes)) {
+			$response['common-prefixes'] = $outCommonsPrefixes;
+		}
 
 		header('Content-Type: application/json');
-		die(json_encode(array(
-			'prefix' => $prefix,
-			'delimiter' => '/',
-			'objects' => $result
-		)));
+		die(json_encode($response));
 	}
 
 	public function handleDeleteObject() {
@@ -532,7 +551,7 @@ function config() {
 
 	$acls = acls();
 
-	$bucket = new LocalBucket($acls, "/home/zeisss/var/data/myfiles");
+	$bucket = new LocalBucket($acls, "/home/zeisss/var/fs");
 	@$bucket->putObject('/api.md', $DOC, 'public-read');
 	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
 	#$bucket->putObject('/folder.md', "Hello World");
@@ -573,6 +592,7 @@ function tests() {
 	$bucket = new LocalBucket($acls, "./data");
 	
 	$bucket->putObject('/test.txt', "Hello World\nSome lines\nYeah");
+	$bucket->putObject('/file.txt', "Some content");
 	$bucket->putObject('/folder.txt', "Hello World");
 	$bucket->putObject('/folder/test.txt', "Hello World");
 	$bucket->putObject('/folder/test2.txt', "Hello World");
@@ -604,10 +624,16 @@ function tests() {
 	}
 
 	$obj = $bucket->getObjectInfo("/test.txt");
-	echo json_encode($obj);
+	echo json_encode($obj) . "\n\n";
+
+	$objs = array();
+	$prefixes = array();
+	$bucket->listObjects("/folder/test", true, $objs, $prefixes);
+	echo json_encode($objs) . "\n";
+	echo json_encode($prefixes) . "\n";
 
 }
 
 
 handleRequest();
-#tests();
+# tests();
