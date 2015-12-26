@@ -27,7 +27,7 @@ deploy:
                 path="/artifacts/fs-php/${VERSION}/fs-php.tar.gz"
                 basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} http://moinz.de/files/fs.php"
                 acl=public
-                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${private}" -H'Content-Type: application/octet-stream'
+                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream'
                 echo $?
 
         - script:
