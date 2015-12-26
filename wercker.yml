@@ -3,6 +3,11 @@ box: php
 build:
     steps:
         - script:
+            name: Validate fs.php
+            code: |
+                php -l fs.php
+
+        - script:
             name: copy files to pkg/
             code: |
                 mkdir -p $WERCKER_OUTPUT_DIR/pkg/fs-php
