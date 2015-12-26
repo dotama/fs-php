@@ -1,0 +1,34 @@
+box: php
+
+build:
+    steps:
+        - script:
+            name: copy files to pkg/
+            code: |
+                mkdir -p $WERCKER_OUTPUT_DIR/pkg/fs-php
+                cp fs.php $WERCKER_OUTPUT_DIR/pkg/fs-php/
+                cp VERSION $WERCKER_OUTPUT_DIR
+        - yudai/targz@0.2.1:
+          input: $WERCKER_OUTPUT_DIR/pkg
+          output: $WERCKER_OUTPUT_DIR/dist
+
+deploy:
+    steps:
+        - script:
+            name: Upload Build Artifact 
+            code: |
+                VERSION=$(cat VERSION)
+                file="./dist/fs-php.tar.gz"
+                path="/artifacts/fs-php/${VERSION}/fs-php.tar.gz"
+                basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} http://moinz.de/files/fs.php"
+                acl=private
+                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${private}" -H'Content-Type: application/octet-stream'
+                echo $?
+
+        - script:
+            name: Deploy artifact
+            code: |
+                site_name=fs
+                desired_version=$(cat VERSION)
+                curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
+                echo $?
