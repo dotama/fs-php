@@ -1,0 +1,130 @@
+{
+  "kind": "discovery#restDescription",
+  "id": "fs:v1",
+  "name": "fs",
+  "canonicalName": "FileSystem",
+  "version": "v1",
+  "revision": "20151231",
+  "title": "Moinz.de FileSystem API",
+  "description": "Programmatic access to FS features. ./bin/google-api-go-generator -api_json_file ../fs-php/fs-api.json -api_pkg_base github.com/zeisss/fs-php -build -gendir src/github.com/zeisss/fs-php",
+  "ownerDomain": "moinz.de",
+  "ownerName": "Moinz",
+  "rootUrl": "http://apps.moinz.de",
+  "servicePath": "/fs/fs.php",
+  "parameters": {},
+  "schemas": {
+    "ListObjectsResponse": {
+      "type": "object",
+      "properties": {
+        "objects": {
+          "$ref": "FileItemList"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "delimiter": {
+          "type": "string"
+        },
+        "common-prefixes": {
+          "type": "array",
+          "items": {
+            "$ref": "CommonPrefix"
+          }
+        }
+      }
+    },
+    "CommonPrefix": {
+      "type": "string"
+    },
+    "FileItemList": {
+      "type": "array",
+      "items": {
+        "$ref": "FileItem"
+      }
+    },
+    "FileItem": {
+      "id": "FileItem",
+      "type": "object",
+      "description": "One result file item.",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "The value of allowed indicates whether the access to the policy is allowed or denied by default."
+        },
+        "size": {
+          "type": "number",
+          "format": "uint32",
+          "description": "A list of region codes that identify countries where the default policy do not apply."
+        },
+        "acl": {
+          "type": "string",
+          "description": "foo bar"
+        },
+        "mime": {
+          "type": "string",
+          "description": "foo bar 2"
+        },
+        "mtime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "last modified timestamp - iso 8601"
+        }
+      }
+    }
+  },
+  "resources": {
+    "objects": {
+      "methods": {
+        "list": {
+          "id": "fs.objects.list",
+          "httpMethod": "GET",
+          "description": "foo bar list",
+          "parameters": {
+            "prefix": {
+              "type": "string",
+              "location": "query",
+              "description": "Data format for the response.",
+              "default": "json",
+              "enum": [
+                "json"
+              ],
+              "enumDescriptions": [
+                "Responses with Content-Type of application/json"
+              ],
+              "location": "query"
+            },
+            "delimiter": {
+              "type": "string",
+              "location": "query",
+              "description": "Should keys be separated by an delimiter?",
+              "enum": [
+                "/"
+              ],
+              "enumDescriptions": [
+                "Only / is supported right now."
+              ]
+            }
+          },
+          "response": {
+            "$ref": "ListObjectsResponse"
+          }
+        },
+
+        "download": {
+          "id": "fs.objects.download",
+          "httpMethod": "GET",
+          "description": "Downloads a file.",
+          "supportsMediaDownload": true,
+          "parameters": {
+            "key": {
+              "type": "string",
+              "required": true,
+              "location": "query",
+              "description": "The key of the object to download."
+            }
+          }
+        }
+      }
+    }
+  }
+}
