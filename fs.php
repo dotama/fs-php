@@ -14,7 +14,7 @@ The idea is similar to S3 - do not manage folders but just objects(files).
 
 ## Configuration
 
-The file `fs.php` contains a `config` function. In there, two objects are initialized:
+The file `fs.php` c ontains a `config` function. In there, two objects are initialized:
 
  * KeyManager
  * Bucket
@@ -163,6 +163,31 @@ class KeyManager {
 	public function validCredentials($name, $password) {
 		foreach ($this->keys AS $credentialPair) {
 			if ($credentialPair['access'] == $name && $credentialPair['secret'] == $password) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+class AccessManager {
+	private $grants;
+
+	public function AccessManager() {
+		$this->grants = array();
+	}
+
+	// grant allows acces for the given $username for the given $prefix.
+	public function grant($username, $prefix) {
+		$this->grants[$username][] = $prefix;
+	}
+
+	// hasGrant checks if the given $prefix is allowed for the given $username.
+	public function hasGrant($prefix, $username) {
+		$grants = $this->grants[$username];
+
+		foreach ($grants AS $grant) {
+			if (strpos($prefix, $grant) !== FALSE) {
 				return true;
 			}
 		}
@@ -325,10 +350,13 @@ class Server {
 	private $bucket;
 	private $keyManager;
 	private $acls;
-	public function Server($bucket, $keyManager, $acls) {
+	private $accessManager;
+
+	public function Server($bucket, $keyManager, $acls, $accessManager) {
 		$this->bucket = $bucket;
 		$this->keyManager = $keyManager;
 		$this->acls = $acls;
+		$this->$accessManager = $accessManager;
 	}
 
 	public function handleRequest($host, $method, $path, $headers, $params) {
@@ -373,7 +401,7 @@ class Server {
 	}
 
 	public function handlePutObjectACL() {
-		$this->requiresAuthorization();
+		$this->requiresAuthentication();
 
 		$newACL = file_get_contents('php://input');
 
@@ -384,7 +412,7 @@ class Server {
 	}
 
 	public function handleListObjects() {
-		$this->requiresAuthorization();
+		$this->requiresAuthentication();
 
 		$prefix = "/";
 		if (!empty($this->params['prefix'])) {
@@ -419,7 +447,7 @@ class Server {
 	}
 
 	public function handleDeleteObject() {
-		$this->requiresAuthorization();
+		$this->requiresAuthentication();
 
 		$found = $this->bucket->deleteObject($this->path);
 
@@ -432,7 +460,7 @@ class Server {
 	}
 
 	public function handlePutObject() {
-		$this->requiresAuthorization();
+		$this->requiresAuthentication();
 
 		$acl = NULL;
 		if (!empty($this->headers['x-acl'])) {
@@ -450,7 +478,7 @@ class Server {
 		$info = $this->bucket->getObjectInfo($this->path);
 	
 		if (!$this->acls->allowsUnauthorizedRead($info['acl'])) {
-			$this->requiresAuthorization();
+			$this->requiresAuthentication();
 		}
 
 		$data = $this->bucket->getObject($this->path);
@@ -513,15 +541,15 @@ class Server {
 		die(json_encode($response)."\n");
 	}
 
-	private function requiresAuthorization() {
-		if (!$this->checkAuthorization()) {
+	private function requiresAuthentication() {
+		if (!$this->checkAuthentication()) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
 
 			$this->sendError(new Exception("Authentication required", 401), 401);
 		}
 	}
 
-	private function checkAuthorization() {
+	private function checkAuthentication() {
 		$auth = $this->headers['authorization'];
 
 		$fields = explode(" ", $auth);
@@ -538,7 +566,14 @@ class Server {
 			return false;
 		}
 
-		return $this->keyManager->validCredentials($credentials[0], $credentials[1]);
+		if ($this->keyManager->validCredentials($credentials[0], $credentials[1])) {
+			if ($this->accessManager->hasGrant($this->path, $credentials[0])) {
+				return true;
+			}
+		}
+
+
+		return false;
 	}
 }
 
@@ -562,13 +597,14 @@ function config() {
 	#$bucket->putObject('/folder/test.md', "Hello World");
 	#$bucket->putObject('/folder/test2.md', "Hello World");
 
+	$accessManager = new AccessManager;
 	$keyManager = new KeyManager;
 	# Replace this with your own secret credentials
 	#   $keyManager->addKey('test', 'test');
 	# Or load the keys from the bucket itself
 	@include($bucket->toDiskPath('/keys.php'));
 
-	return array($keyManager, $bucket, $acls);
+	return array($keyManager, $bucket, $acls, $accessManager);
 }
 
 function handleRequest() {
@@ -583,8 +619,8 @@ function handleRequest() {
 		$headers[strtolower($key)] = $value;
 	}
 
-	list($keyManager, $bucket, $acls) = config();
-	$server = new Server($bucket, $keyManager, $acls);
+	list($keyManager, $bucket, $acls, $accessManager) = config();
+	$server = new Server($bucket, $keyManager, $acls, $accessManager);
 	$server->handleRequest($host, $method, $path, $headers, $params);
 }
 
