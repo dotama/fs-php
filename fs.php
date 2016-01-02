@@ -352,6 +352,13 @@ class Server {
 	private $acls;
 	private $accessManager;
 
+	private $headers;
+	private $params;
+	private $host;
+	private $method;
+	private $path;
+	private $username;
+
 	public function Server($bucket, $keyManager, $acls, $accessManager) {
 		$this->bucket = $bucket;
 		$this->keyManager = $keyManager;
@@ -502,7 +509,6 @@ class Server {
 		}
 	}
 
-
 	private function sendDebug() {
 		header('Content-Type: text/plain');
 		
@@ -546,6 +552,8 @@ class Server {
 			header('WWW-Authenticate: Basic realm="fs.php"');
 
 			$this->sendError(new Exception("Authentication required", 401), 401);
+		} else if (!$this->accessManager->hasGrant($this->path, $credentials[0])) {
+			$this->sendError(new Exception("Access forbidden", 403), 403);
 		}
 	}
 
@@ -567,9 +575,7 @@ class Server {
 		}
 
 		if ($this->keyManager->validCredentials($credentials[0], $credentials[1])) {
-			if ($this->accessManager->hasGrant($this->path, $credentials[0])) {
-				return true;
-			}
+			$this->username = $credentials[0];
 		}
 
 
