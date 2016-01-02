@@ -187,7 +187,7 @@ class AccessManager {
 		$grants = $this->grants[$username];
 
 		foreach ($grants AS $grant) {
-			if (strpos($prefix, $grant) !== FALSE) {
+			if (strpos($prefix, $grant) == 0) {
 				return true;
 			}
 		}
@@ -356,7 +356,7 @@ class Server {
 		$this->bucket = $bucket;
 		$this->keyManager = $keyManager;
 		$this->acls = $acls;
-		$this->$accessManager = $accessManager;
+		$this->accessManager = $accessManager;
 	}
 
 	public function handleRequest($host, $method, $path, $headers, $params) {
