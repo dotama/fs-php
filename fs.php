@@ -178,12 +178,18 @@ class AccessManager {
 	}
 
 	// grant allows acces for the given $username for the given $prefix.
-	public function grant($username, $prefix) {
+	public function grantWrite($username, $prefix) {
 		$this->grants[$username][] = $prefix;
 	}
 
-	// hasGrant checks if the given $prefix is allowed for the given $username.
-	public function hasGrant($prefix, $username) {
+	public function hasReadGrant($prefix, $username) {
+		// everybody has read access to all paths
+		// FIXME: We can do better
+		return !empty($username);
+	}
+
+	// hasWriteGrant checks if the given $prefix is allowed for the given $username.
+	public function hasWriteGrant($prefix, $username) {
 		$grants = $this->grants[$username];
 
 		foreach ($grants AS $grant) {
@@ -408,7 +414,7 @@ class Server {
 	}
 
 	public function handlePutObjectACL() {
-		$this->requiresAuthentication();
+		$this->requiresAuthentication(true);
 
 		$newACL = file_get_contents('php://input');
 
@@ -454,7 +460,7 @@ class Server {
 	}
 
 	public function handleDeleteObject() {
-		$this->requiresAuthentication();
+		$this->requiresAuthentication(true);
 
 		$found = $this->bucket->deleteObject($this->path);
 
@@ -467,7 +473,7 @@ class Server {
 	}
 
 	public function handlePutObject() {
-		$this->requiresAuthentication();
+		$this->requiresAuthentication(true);
 
 		$acl = NULL;
 		if (!empty($this->headers['x-acl'])) {
@@ -547,13 +553,22 @@ class Server {
 		die(json_encode($response)."\n");
 	}
 
-	private function requiresAuthentication() {
+	private function requiresAuthentication($write = false) {
 		if (!$this->checkAuthentication()) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
 
 			$this->sendError(new Exception("Authentication required", 401), 401);
-		} else if (!$this->accessManager->hasGrant($this->path, $credentials[0])) {
-			$this->sendError(new Exception("Access forbidden", 403), 403);
+		} else {
+			$denied = true;
+			if ($write) {
+				$denied = !$this->accessManager->hasWriteGrant($this->path, $this->username);
+			} else {
+				$denied = !$this->accessManager->hasReadGrant($this->path, $this->username);
+			}
+
+			if ($denied) {
+				$this->sendError(new Exception("Access denied (" . ($write ? "write" : "read") . ")", 403), 403);
+			}
 		}
 	}
 
@@ -576,8 +591,8 @@ class Server {
 
 		if ($this->keyManager->validCredentials($credentials[0], $credentials[1])) {
 			$this->username = $credentials[0];
+			return true;
 		}
-
 
 		return false;
 	}
@@ -631,6 +646,16 @@ function handleRequest() {
 }
 
 function tests() {
+	$accessManager = new AccessManager;
+	$accessManager->grantWrite('zeisss', '/');
+
+	if (!$accessManager->hasWriteGrant('/artifacts/', 'zeisss')) {
+		echo "AccessManager test1 failed\n";
+	}
+	if (!$accessManager->hasWriteGrant('/', 'zeisss')) {
+		echo "AccessManager test2 failed\n";
+	}
+
 	$keyManager = new KeyManager;
 	$keyManager->addKey('test', 'test');
 
