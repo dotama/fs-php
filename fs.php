@@ -427,7 +427,7 @@ class Server {
 	}
 
 	public function handlePutObjectACL() {
-		$this->requiresAuthentication(true);
+		$this->requiresAuthentication(true, $this->path);
 
 		$newACL = file_get_contents('php://input');
 
@@ -438,8 +438,7 @@ class Server {
 	}
 
 	public function handleListObjects() {
-		$this->requiresAuthentication();
-
+		
 		$prefix = "/";
 		if (!empty($this->params['prefix'])) {
 			$prefix = $this->params['prefix'];
@@ -452,6 +451,9 @@ class Server {
 				$this->sendError(new Exception('Invalid parameter: Parameter "delimiter" only supports "/"', 400), 400);
 			}
 		}
+
+		$this->requiresAuthentication(false, $prefix);
+
 		$outObjects = array();
 		$outCommonsPrefixes = array();
 		$this->bucket->listObjects($prefix, $showCommonPrefixes, $outObjects, $outCommonsPrefixes);
@@ -473,7 +475,7 @@ class Server {
 	}
 
 	public function handleDeleteObject() {
-		$this->requiresAuthentication(true);
+		$this->requiresAuthentication(true, $this->path);
 
 		$found = $this->bucket->deleteObject($this->path);
 
@@ -486,7 +488,7 @@ class Server {
 	}
 
 	public function handlePutObject() {
-		$this->requiresAuthentication(true);
+		$this->requiresAuthentication(true, $this->path);
 
 		$acl = NULL;
 		if (!empty($this->headers['x-acl'])) {
@@ -504,7 +506,7 @@ class Server {
 		$info = $this->bucket->getObjectInfo($this->path);
 	
 		if (!$this->acls->allowsUnauthorizedRead($info['acl'])) {
-			$this->requiresAuthentication();
+			$this->requiresAuthentication(false, $this->path);
 		}
 
 		$data = $this->bucket->getObject($this->path);
@@ -531,11 +533,12 @@ class Server {
 	private function sendDebug() {
 		header('Content-Type: text/plain');
 		
-		echo $this->host . "\n";
-		echo $this->method ."\n";
-		echo $this->path ."\n";
-		echo json_encode($this->headers) . "\n";
-		echo json_encode($this->params) . "\n";
+		echo "Host: " . $this->host . "\n";
+		echo "Method: " . $this->method ."\n";
+		echo "Path: " . $this->path ."\n";
+		echo "\n";
+		echo "Headers: " . json_encode($this->headers) . "\n";
+		echo "Params: " . json_encode($this->params) . "\n";
 		die();
 	}
 
@@ -545,7 +548,10 @@ class Server {
 			header("HTTP/1.1 400 Bad Request");
 			break;
 		case 401:
-			header('HTTP/1.0 401 Unauthorized');
+			header('HTTP/1.1 401 Unauthorized');
+			break;
+		case 403: 
+			header("HTTP/1.1 403 Forbidden");
 			break;
 		case 404:
 			header("HTTP/1.1 404 Not Found");
@@ -558,6 +564,8 @@ class Server {
 			break;
 		}
 
+		header("Content-Type: application/json");
+
 		$response = array(
 			'error' => true,
 			'message' => $exception->getMessage(),
@@ -566,7 +574,7 @@ class Server {
 		die(json_encode($response)."\n");
 	}
 
-	private function requiresAuthentication($write = false) {
+	private function requiresAuthentication($write, $prefix) {
 		if (!$this->checkAuthentication()) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
 
@@ -574,13 +582,13 @@ class Server {
 		} else {
 			$denied = true;
 			if ($write) {
-				$denied = !$this->accessManager->hasWriteGrant($this->path, $this->username);
+				$denied = !$this->accessManager->hasWriteGrant($prefix, $this->username);
 			} else {
-				$denied = !$this->accessManager->hasReadGrant($this->path, $this->username);
+				$denied = !$this->accessManager->hasReadGrant($prefix, $this->username);
 			}
 
 			if ($denied) {
-				$this->sendError(new Exception("Access denied (" . ($write ? "write" : "read") . ")", 403), 403);
+				$this->sendError(new Exception("Access denied (" . ($write ? "write" : "read") . ") for '{$this->path}'", 403), 403);
 			}
 		}
 	}
