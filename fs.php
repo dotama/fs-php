@@ -171,33 +171,48 @@ class KeyManager {
 }
 
 class AccessManager {
-	private $grants;
+	private $policies;
 
 	public function AccessManager() {
-		$this->grants = array();
+		$this->policies = array();
 	}
 
-	// grant allows acces for the given $username for the given $prefix.
-	public function grantWrite($username, $prefix) {
-		$this->grants[$username][] = $prefix;
+	// addPolicy allows acces for the given $username for the given $prefix.
+	public function addPolicy($username, $prefix, $allowRead, $allowWrite) {
+		$policy = array(
+			'username' => $username,
+			'prefix' => $prefix,
+			'grants' => array (
+				'read' => $alloweRead
+			)
+		);
+
+		if ($allowRead) {
+			array_push($policy['grants'], 'read');
+		}
+		if ($allowWrite) {
+			array_push($policy['grants'], 'write');
+		}
+		$this->policies[] = $policy;
+	}
+
+	public function hasGrant($prefix, $username, $grant) {
+		foreach($this->policies as $policy) {
+			if ($username === $policy['username']) {
+				if (strpos($prefix, $policy['prefix']) === 0) {
+					return array_search($grant, $policy['grants'], TRUE) !== FALSE;
+				}
+			}
+		}
 	}
 
 	public function hasReadGrant($prefix, $username) {
-		// everybody has read access to all paths
-		// FIXME: We can do better
-		return !empty($username);
+		return $this->hasGrant($prefix, $username, 'read');
 	}
 
 	// hasWriteGrant checks if the given $prefix is allowed for the given $username.
 	public function hasWriteGrant($prefix, $username) {
-		$grants = $this->grants[$username];
-
-		foreach ($grants AS $grant) {
-			if (strpos($prefix, $grant) === 0) {
-				return true;
-			}
-		}
-		return false;
+		return $this->hasGrant($prefix, $username, 'write');
 	}
 }
 
@@ -623,7 +638,8 @@ function config() {
 	# Replace this with your own secret credentials
 	#   $keyManager->addKey('test', 'test');
 	# Or load the keys from the bucket itself
-	@include($bucket->toDiskPath('/keys.php'));
+	@include($bucket->toDiskPath('/configs/keys.php'));
+	@include($bucket->toDiskPath('/configs/policies.php'));
 
 	return array($keyManager, $bucket, $acls, $accessManager);
 }
