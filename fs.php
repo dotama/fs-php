@@ -14,7 +14,7 @@ The idea is similar to S3 - do not manage folders but just objects(files).
 
 ## Configuration
 
-The file `fs.php` c ontains a `config` function. In there, two objects are initialized:
+The file `fs.php` contains a `config` function. In there, two objects are initialized:
 
  * KeyManager
  * Bucket
@@ -438,7 +438,6 @@ class Server {
 	}
 
 	public function handleListObjects() {
-		
 		$prefix = "/";
 		if (!empty($this->params['prefix'])) {
 			$prefix = $this->params['prefix'];
@@ -550,7 +549,7 @@ class Server {
 		case 401:
 			header('HTTP/1.1 401 Unauthorized');
 			break;
-		case 403: 
+		case 403:
 			header("HTTP/1.1 403 Forbidden");
 			break;
 		case 404:
@@ -680,7 +679,6 @@ function testPolicies() {
 
 function tests() {
 	testPolicies();
-	
 
 	$keyManager = new KeyManager;
 	$keyManager->addKey('test', 'test');
