@@ -193,7 +193,7 @@ class AccessManager {
 		$grants = $this->grants[$username];
 
 		foreach ($grants AS $grant) {
-			if (strpos($prefix, $grant) == 0) {
+			if (strpos($prefix, $grant) === 0) {
 				return true;
 			}
 		}
