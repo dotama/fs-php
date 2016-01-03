@@ -566,7 +566,7 @@ function config() {
 	# Replace this with your own secret credentials
 	#   $keyManager->addKey('test', 'test');
 	# Or load the keys from the bucket itself
-	@include($bucket->toDiskPath('/keys.php'));
+	@include($bucket->toDiskPath('/configs/keys.php'));
 
 	return array($keyManager, $bucket, $acls);
 }
