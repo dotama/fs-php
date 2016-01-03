@@ -16,6 +16,10 @@ build:
         - yudai/targz@0.2.1:
           input: $WERCKER_OUTPUT_DIR/pkg
           output: $WERCKER_OUTPUT_DIR/dist
+        - script:
+           name: show hash sums
+           code: |
+               cat $WERCKER_OUTPUT_DIR/dist/SHASUMS
 
 deploy:
     steps:
@@ -27,8 +31,7 @@ deploy:
                 path="/artifacts/fs-php/${VERSION}/fs-php.tar.gz"
                 basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} http://moinz.de/files/fs.php"
                 acl=public-read
-                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream'
-                echo $?
+                ${basecurl}${path}.ignore -i -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream'
 
         - script:
             name: Deploy artifact
