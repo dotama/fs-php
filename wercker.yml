@@ -29,6 +29,8 @@ deploy:
                 acl=public-read
                 ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream'
                 echo $?
+                echo $file
+                md5sum $file
 
         - script:
             name: Deploy artifact
