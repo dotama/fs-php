@@ -182,9 +182,7 @@ class AccessManager {
 		$policy = array(
 			'username' => $username,
 			'prefix' => $prefix,
-			'grants' => array (
-				'read' => $alloweRead
-			)
+			'grants' => array ()
 		);
 
 		if ($allowRead) {
@@ -660,17 +658,21 @@ function handleRequest() {
 	$server = new Server($bucket, $keyManager, $acls, $accessManager);
 	$server->handleRequest($host, $method, $path, $headers, $params);
 }
-
-function tests() {
+function testPolicies() {
 	$accessManager = new AccessManager;
-	$accessManager->grantWrite('zeisss', '/');
+	$accessManager->addPolicy('zeisss', '/', test, true);
 
-	if (!$accessManager->hasWriteGrant('/artifacts/', 'zeisss')) {
+	if (!$accessManager->hasReadGrant('/artifacts/', 'zeisss')) {
 		echo "AccessManager test1 failed\n";
 	}
 	if (!$accessManager->hasWriteGrant('/', 'zeisss')) {
 		echo "AccessManager test2 failed\n";
 	}
+}
+
+function tests() {
+	testPolicies();
+	
 
 	$keyManager = new KeyManager;
 	$keyManager->addKey('test', 'test');
