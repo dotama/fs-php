@@ -17,10 +17,29 @@ The idea is similar to S3 - do not manage folders but just objects(files).
 The file `fs.php` contains a `config` function. In there, two objects are initialized:
 
  * KeyManager
+
+   Use `$keyManager->addBcryptCredentials($name, $hash)` to add a bcrypt hashed password.
+   Use `$keyManager->addKey($name, $password)` to add a plain text password. Not recommended!
+
+ * AccessManager
+
+   Use `$accessManager->newPolicy()` to get a Policy object. It supports the following ways to modify the policy:
+
+    * `deny()` - Marks this policy to restrict access. by default it grants access
+    * `forUsername($username)` - Adds a filter to apply only to the given username. Can be used multiple times.
+    * `forPrefix($prefix)` - Adds a filter to apply only to the given prefix or path. Can be used multiple times.
+    * `permission($p)` - Adds a filter for the permission. `read` or `write`.
+    * `description($text)` - A description for yourself. Code comments work as well.
+
  * Bucket
 
 The bucket takes the path where files should be created. The KeyManager manages the auth tokens that can be used
 to authenticate with the API.
+
+By default, `fs.php` also loads two files from the bucket itself, which can be used to customize the config:
+
+ * `/configs/keys.php` - Put your `$keyManager` calls here
+ * `/configs/policies.php` - Put your `$accessManager` calls here
 
 ## API
 
@@ -174,7 +193,46 @@ class KeyManager {
 		return false;
 	}
 }
+class Policy {
+	const EFFECT_ALLOW = 'allow';
+	const EFFECT_DENY = 'deny';
 
+	private $description;
+	public $usernames;
+	public $prefixes;
+
+	public $effect = 'allow';
+	public $permissions = array();
+
+	public function hasAccess() {
+		return $this->effect == Policy::EFFECT_ALLOW;
+	}
+
+	public function deny() {
+		$this->effect = Policy::EFFECT_DENY;
+		return $this;
+	}
+
+	public function forPrefix($prefix) {
+		$this->prefixes[] = $prefix;
+		return $this;
+	}
+
+	public function forUsername($text) {
+		$this->usernames[] = $text;
+		return $this;
+	}
+
+	public function description($text) {
+		$this->description = $text;
+		return $this;
+	}
+
+	public function permission($permission) {
+		$this->permissions[] = $permission;
+		return $this;
+	}
+}
 class AccessManager {
 	private $policies;
 
@@ -182,40 +240,75 @@ class AccessManager {
 		$this->policies = array();
 	}
 
+	public function newPolicy() {
+		$policy = new Policy();
+		$this->policies[] = $policy;
+		return $policy;
+	}
+
 	// addPolicy allows acces for the given $username for the given $prefix.
 	public function addPolicy($username, $prefix, $allowRead, $allowWrite) {
-		$policy = array(
-			'username' => $username,
-			'prefix' => $prefix,
-			'grants' => array ()
-		);
+		$policy = $this->newPolicy()
+		    ->description('addPolicy')
+			->forUsername($username)
+			->forPrefix($prefix);
 
 		if ($allowRead) {
-			array_push($policy['grants'], 'read');
+			$policy->permission('read');
 		}
 		if ($allowWrite) {
-			array_push($policy['grants'], 'write');
+			$policy->permission('write');
 		}
-		$this->policies[] = $policy;
+		return $policy;
 	}
 
-	public function hasGrant($prefix, $username, $grant) {
+	public function isGranted($prefix, $username, $permission) {
+		$allowed = false;
+		// Logic is as follows:
+		// * Policy must match by username + prefix
+		// * Policy must contain requested permission
+		// * if any policies has effect=deny, it wins over an allow policy
+		// * at least one policy must allow, other it also denies
+		//
+		// see also https://github.com/ory-am/ladon/blob/master/guard/guard.go 
 		foreach($this->policies as $policy) {
-			if ($username === $policy['username']) {
-				if (strpos($prefix, $policy['prefix']) === 0) {
-					return array_search($grant, $policy['grants'], TRUE) !== FALSE;
+			// Check usernames match
+			if (sizeof($policy->usernames) > 0) {
+				if (array_search($username, $policy->usernames, TRUE) === FALSE) {
+					continue;
 				}
 			}
+
+			// Check prefixes
+			if (sizeof($policy->prefixes) > 0) {
+				$found = false;
+				foreach($policy->prefixes as $policyPrefix) {
+					if (strpos($prefix, $policyPrefix) === 0) { // match!
+						$found = true;
+					}
+				}
+
+				if (!$found) {
+					continue;
+				}
+			}
+
+			// Check permissions
+			if (sizeof($policy->permissions) > 0) {
+				if (array_search($permission, $policy->permissions, TRUE) === FALSE) {
+					continue;
+				}
+			}
+
+			// Apply result
+			if (!$policy->hasAccess()) {
+				#echo "isGranted($username, $prefix, $permission) = false # access\n";
+				return false;
+			}
+			$allowed = true;
 		}
-	}
-
-	public function hasReadGrant($prefix, $username) {
-		return $this->hasGrant($prefix, $username, 'read');
-	}
-
-	// hasWriteGrant checks if the given $prefix is allowed for the given $username.
-	public function hasWriteGrant($prefix, $username) {
-		return $this->hasGrant($prefix, $username, 'write');
+		#echo "isGranted($username, $prefix, $permission) = $allowed # allowed\n";
+		return $allowed;
 	}
 }
 
@@ -584,14 +677,13 @@ class Server {
 
 			$this->sendError(new Exception("Authentication required", 401), 401);
 		} else {
-			$denied = true;
-			if ($write) {
-				$denied = !$this->accessManager->hasWriteGrant($prefix, $this->username);
-			} else {
-				$denied = !$this->accessManager->hasReadGrant($prefix, $this->username);
-			}
+			$granted = $this->accessManager->isGranted(
+				$prefix,
+				$this->username, 
+				$write ? 'write' : 'read'
+			);
 
-			if ($denied) {
+			if (!$granted) {
 				$this->sendError(new Exception("Access denied (" . ($write ? "write" : "read") . ") for '{$this->path}'", 403), 403);
 			}
 		}
@@ -672,13 +764,28 @@ function handleRequest() {
 }
 function testPolicies() {
 	$accessManager = new AccessManager;
-	$accessManager->addPolicy('zeisss', '/', test, true);
+	$accessManager->addPolicy('zeisss', '/', true, true);
 
-	if (!$accessManager->hasReadGrant('/artifacts/', 'zeisss')) {
+	if (!$accessManager->isGranted('/artifacts/', 'zeisss', 'read')) {
 		echo "AccessManager test1 failed\n";
 	}
-	if (!$accessManager->hasWriteGrant('/', 'zeisss')) {
+	if (!$accessManager->isGranted('/', 'zeisss', 'write')) {
 		echo "AccessManager test2 failed\n";
+	}
+
+	$accessManager->newPolicy()->forUsername('zeisss')->forPrefix('/artifacts/')->deny()->permission('read');
+	if ($accessManager->isGranted('/artifacts/', 'zeisss', 'read')) {
+		echo "AccessManager test3 failed\n";
+	}
+
+    $accessManager = new AccessManager();
+	$accessManager->newPolicy()
+	  ->description('Grant zeisss access to everything')
+	  ->forUsername('zeisss')->forPrefix('/')
+	  ->permission('read')->permission('write');
+	$accessManager->newPolicy()->deny()->forPrefix("/api.md")->permission('read')->forUsername('zeisss');
+	if ($accessManager->isGranted('/api.md', 'zeisss', 'read')) {
+		echo "AccessManager test4 failed\n";
 	}
 }
 
