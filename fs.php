@@ -31,6 +31,19 @@ The file `fs.php` contains a `config` function. In there, two objects are initia
     * `permission($p)` - Adds a filter for the permission. `read` or `write`.
     * `description($text)` - A description for yourself. Code comments work as well.
 
+  Example:
+
+  ```
+  $accessManager->newPolicy()
+    ->description('Grant zeisss access to everything')
+    ->forUsername('zeisss')
+    ->forPrefix('/');
+
+  $accessManager->newPolicy()
+    ->description('Deny write access to /configs/')
+    ->deny()->forPrefix("/configs/")->permission('write');
+  ```
+
  * Bucket
 
 The bucket takes the path where files should be created. The KeyManager manages the auth tokens that can be used
@@ -738,7 +751,8 @@ function config() {
 	$accessManager = new AccessManager;
 	$keyManager = new KeyManager;
 	# Replace this with your own secret credentials
-	#   $keyManager->addKey('test', 'test');
+	#   $keyManager->addBcryptCredentials('test', '$y2k$hashviabcrypt');
+	#   $accessManager->newPolicy()->forUsername('test')->permission('write');
 	# Or load the keys from the bucket itself
 	@include($bucket->toDiskPath('/configs/keys.php'));
 	@include($bucket->toDiskPath('/configs/policies.php'));
