@@ -212,6 +212,7 @@ class Policy {
 	const EFFECT_ALLOW = 'allow';
 	const EFFECT_DENY = 'deny';
 
+	private $id;
 	private $description;
 	public $usernames;
 	public $prefixes;
@@ -225,6 +226,11 @@ class Policy {
 
 	public function deny() {
 		$this->effect = Policy::EFFECT_DENY;
+		return $this;
+	}
+
+	public function id($id) {
+		$this->id = $id;
 		return $this;
 	}
 
