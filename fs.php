@@ -46,6 +46,8 @@ The file `fs.php` contains a `config` function. In there, two objects are initia
 
  * Bucket
 
+   You cannot configure the bucket really.
+
 The bucket takes the path where files should be created. The KeyManager manages the auth tokens that can be used
 to authenticate with the API.
 
