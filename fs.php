@@ -217,7 +217,7 @@ class Policy {
 	public $usernames;
 	public $prefixes;
 
-	public $effect = EFFECT_ALLOW;
+	public $effect = Policy::EFFECT_ALLOW;
 	public $permissions = array();
 
 	public function hasAccess() {
