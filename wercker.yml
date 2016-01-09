@@ -36,7 +36,7 @@ deploy:
         - script:
             name: Deploy artifact
             code: |
-                site_name=${DEPLOY_SITENAME:fs}
+                site_name=${DEPLOY_SITENAME:-fs}
                 desired_version=$(cat VERSION)
                 curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
