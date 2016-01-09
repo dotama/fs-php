@@ -749,7 +749,7 @@ function config() {
 	# Load config file
 	@require_once(__DIR__ . '/fs.config.php');
 	if (empty($bucketPath)) {
-		die('$bucketPath must be configured in fs.config.php - is empty.');
+		die('$bucketPath must be configured in fs.config.php - empty');
 	}
 
 	$acls = acls();
@@ -758,19 +758,19 @@ function config() {
 	$bucket = new LocalBucket($acls, $bucketPath);
 	@$bucket->putObject('/api.md', $DOC, 'public-read');
 	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
-	#$bucket->putObject('/folder.md', "Hello World");
-	#$bucket->putObject('/folder/test.md', "Hello World");
-	#$bucket->putObject('/folder/test2.md', "Hello World");
 
 	$accessManager = new AccessManager;
 	$keyManager = new KeyManager;
-	# Replace this with your own secret credentials
-	#   $keyManager->addBcryptCredentials('test', '$y2k$hashviabcrypt');
-	#   $accessManager->newPolicy()->forUsername('test')->permission('write');
-	# Or load the keys from the bucket itself
-	@include($bucket->toDiskPath('/configs/keys.php'));
-	@include($bucket->toDiskPath('/configs/policies.php'));
 
+	# Load configuration files from bucket itself
+	#  $accessManager->newPolicy()...
+	#  $keyManager->addToken()
+	#  $keyManager->addBcryptCredentials
+	if (isset($bucketConfigFiles)) {
+		foreach($bucketConfigFiles as $path) {
+			require($bucket->toDiskPath($path));
+		}
+	}
 	return array($keyManager, $bucket, $acls, $accessManager);
 }
 
