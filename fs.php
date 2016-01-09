@@ -705,7 +705,7 @@ class Server {
 			);
 
 			if (!$granted) {
-				$this->sendError(new Exception("Access denied (" . ($write ? "write" : "read") . ") for '{$this->path}'", 403), 403);
+				$this->sendError(new Exception("Access denied (" . ($write ? "write" : "read") . ") for '{$prefix}'", 403), 403);
 			}
 		}
 	}
