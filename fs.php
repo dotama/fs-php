@@ -745,11 +745,16 @@ function acls() {
 
 
 function config() {
-	global $DOC;
+	# Load config file
+	@require_once(__DIR__ . '/fs.config.php');
+	if (empty($bucketPath)) {
+		error_log('$bucketPath must be configured in fs.config.php - is empty.')
+	}
 
 	$acls = acls();
 
-	$bucket = new LocalBucket($acls, "/home/zeisss/var/fs");
+	global $DOC;
+	$bucket = new LocalBucket($acls, $bucketPath);
 	@$bucket->putObject('/api.md', $DOC, 'public-read');
 	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
 	#$bucket->putObject('/folder.md', "Hello World");
