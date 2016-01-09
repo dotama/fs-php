@@ -748,7 +748,7 @@ function config() {
 	# Load config file
 	@require_once(__DIR__ . '/fs.config.php');
 	if (empty($bucketPath)) {
-		error_log('$bucketPath must be configured in fs.config.php - is empty.');
+		die('$bucketPath must be configured in fs.config.php - is empty.');
 	}
 
 	$acls = acls();
