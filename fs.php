@@ -286,8 +286,9 @@ class AccessManager {
 	public function isGranted($prefix, $username, $permission) {
 		$allowed = false;
 		// Logic is as follows:
-		// * Policy must match by username + prefix
-		// * Policy must contain requested permission
+		// * If a policy has usernames, one must match
+		// * If a policy has a prefix, one must match
+		// * One policy must contain the requested permission
 		// * if any policies has effect=deny, it wins over an allow policy
 		// * at least one policy must allow, other it also denies
 		//
