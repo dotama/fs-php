@@ -856,10 +856,10 @@ function testPolicies() {
 	$accessManager->newPolicy()->permission('mfs::*'); // allow all by default
 	$accessManager->newPolicy()->deny()->permission('mfs::(Delete|Put)*'); // Deny writes
 	if($accessManager->isGranted('/api.md', 'zeisss', 'DeleteObject')) {
-		echo "AccessManager test5 failed - expected DeleteObject to be denied\n";	
+		echo "AccessManager test5 failed - expected DeleteObject to be denied\n";
 	}
 	if($accessManager->isGranted('/api.md', 'zeisss', 'PutObjectACL')) {
-		echo "AccessManager test5 failed - expected PutObjectACL to be denied\n";	
+		echo "AccessManager test5 failed - expected PutObjectACL to be denied\n";
 	}
 }
 
