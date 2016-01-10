@@ -41,7 +41,8 @@ The file `fs.php` contains a `config` function. In there, two objects are initia
 
   $accessManager->newPolicy()
     ->description('Deny write access to /configs/')
-    ->deny()->forPrefix("/configs/")->permission('write');
+    ->deny()->forPrefix("/configs/")
+    ->permission('mfs::(Delete|Put)*');
   ```
 
  * Bucket
@@ -815,7 +816,7 @@ function testPolicies() {
 	if (!$accessManager->isGranted('/artifacts/', 'zeisss', 'mfs::ReadObject')) {
 		echo "AccessManager test1 failed\n";
 	}
-	if (!$accessManager->isGranted('/', 'zeisss', 'mfs::WriteObject')) {
+	if (!$accessManager->isGranted('/', 'zeisss', 'mfs::PutObject')) {
 		echo "AccessManager test2 failed\n";
 	}
 
@@ -835,6 +836,16 @@ function testPolicies() {
 	$accessManager->newPolicy()->deny()->forPrefix("/api.md")->permission('mfs::ReadObject')->forUsername('zeisss');
 	if ($accessManager->isGranted('/api.md', 'zeisss', 'read')) {
 		echo "AccessManager test4 failed - expected ReadObject to be denied\n";
+	}
+
+	$accessManager = new AccessManager();
+	$accessManager->newPolicy()->permission('mfs::*'); // allow all by default
+	$accessManager->newPolicy()->deny()->permission('mfs::(Delete|Put)*'); // Deny writes
+	if($accessManager->isGranted('/api.md', 'zeisss', 'DeleteObject')) {
+		echo "AccessManager test5 failed - expected DeleteObject to be denied\n";	
+	}
+	if($accessManager->isGranted('/api.md', 'zeisss', 'PutObjectACL')) {
+		echo "AccessManager test5 failed - expected PutObjectACL to be denied\n";	
 	}
 }
 
