@@ -713,6 +713,7 @@ class Server {
 
 			$this->sendError(new Exception("Authentication required", 401), 401);
 		} else {
+			$permission = 'mfs::' . $permission;
 			$granted = $this->accessManager->isGranted(
 				$prefix,
 				$this->username, 
