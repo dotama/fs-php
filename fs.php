@@ -296,7 +296,7 @@ class AccessManager {
 		foreach($this->policies as $policy) {
 			// Check usernames match
 			if (sizeof($policy->usernames) > 0) {
-				if (array_search($username, $policy->usernames, TRUE) === FALSE) {
+				if (!AccessManager::matches($username, $policy->usernames)) {
 					continue;
 				}
 			}
@@ -315,11 +315,9 @@ class AccessManager {
 				}
 			}
 
-			// Check permissions
-			if (sizeof($policy->permissions) > 0) {
-				if (array_search($permission, $policy->permissions, TRUE) === FALSE) {
-					continue;
-				}
+			// Check permissions (one MUST match)
+			if (!AccessManager::matches($permission, $policy->permissions)) {
+				continue;
 			}
 
 			// Apply result
@@ -331,6 +329,22 @@ class AccessManager {
 		}
 		#echo "isGranted($username, $prefix, $permission) = $allowed # allowed\n";
 		return $allowed;
+	}
+
+	/**
+	 * Checks the $needle against a list of $patterns. Returns TRUE if any pattern matches.
+	 */
+	private static function matches($needle, $patterns) {
+		foreach($patterns as $pattern) {
+			$pattern = '/^' . str_replace('*', '.*', $pattern)  . '$/';
+			$result = preg_match($pattern, $needle);
+			# print $pattern . " to {$needle}\n";
+			# print "> $result\n";
+			if (1 === $result) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -571,7 +585,7 @@ class Server {
 			}
 		}
 
-		$this->requiresAuthentication(false, $prefix);
+		$this->requiresAuthentication('ListObjects', $prefix);
 
 		$outObjects = array();
 		$outCommonsPrefixes = array();
@@ -594,7 +608,7 @@ class Server {
 	}
 
 	public function handleDeleteObject() {
-		$this->requiresAuthentication(true, $this->path);
+		$this->requiresAuthentication('DeleteObject', $this->path);
 
 		$found = $this->bucket->deleteObject($this->path);
 
@@ -607,7 +621,7 @@ class Server {
 	}
 
 	public function handlePutObject() {
-		$this->requiresAuthentication(true, $this->path);
+		$this->requiresAuthentication('PutObject', $this->path);
 
 		$acl = NULL;
 		if (!empty($this->headers['x-acl'])) {
@@ -625,7 +639,7 @@ class Server {
 		$info = $this->bucket->getObjectInfo($this->path);
 	
 		if (!$this->acls->allowsUnauthorizedRead($info['acl'])) {
-			$this->requiresAuthentication(false, $this->path);
+			$this->requiresAuthentication('GetObject', $this->path);
 		}
 
 		$data = $this->bucket->getObject($this->path);
@@ -693,7 +707,7 @@ class Server {
 		die(json_encode($response)."\n");
 	}
 
-	private function requiresAuthentication($write, $prefix) {
+	private function requiresAuthentication($permission, $prefix) {
 		if (!$this->checkAuthentication()) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
 
@@ -702,11 +716,11 @@ class Server {
 			$granted = $this->accessManager->isGranted(
 				$prefix,
 				$this->username, 
-				$write ? 'write' : 'read'
+				$permission
 			);
 
 			if (!$granted) {
-				$this->sendError(new Exception("Access denied (" . ($write ? "write" : "read") . ") for '{$prefix}'", 403), 403);
+				$this->sendError(new Exception("Access denied ({$permission}) for '{$prefix}'", 403), 403);
 			}
 		}
 	}
@@ -792,28 +806,34 @@ function handleRequest() {
 }
 function testPolicies() {
 	$accessManager = new AccessManager;
-	$accessManager->addPolicy('zeisss', '/', true, true);
+	$accessManager->newPolicy()
+		->forUsername('zeisss')
+		->forPrefix('/')
+		->permission('mfs::*');
 
-	if (!$accessManager->isGranted('/artifacts/', 'zeisss', 'read')) {
+	if (!$accessManager->isGranted('/artifacts/', 'zeisss', 'mfs::ReadObject')) {
 		echo "AccessManager test1 failed\n";
 	}
-	if (!$accessManager->isGranted('/', 'zeisss', 'write')) {
+	if (!$accessManager->isGranted('/', 'zeisss', 'mfs::WriteObject')) {
 		echo "AccessManager test2 failed\n";
 	}
 
-	$accessManager->newPolicy()->forUsername('zeisss')->forPrefix('/artifacts/')->deny()->permission('read');
-	if ($accessManager->isGranted('/artifacts/', 'zeisss', 'read')) {
-		echo "AccessManager test3 failed\n";
+	$accessManager->newPolicy()->forUsername('zeisss')
+	              ->deny()
+	              ->forPrefix('/artifacts/')
+	              ->permission('mfs::ReadObject');
+	if ($accessManager->isGranted('/artifacts/', 'zeisss', 'mfs::ReadObject')) {
+		echo "AccessManager test3 failed - expected ReadObject to be denied\n";
 	}
 
     $accessManager = new AccessManager();
 	$accessManager->newPolicy()
 	  ->description('Grant zeisss access to everything')
 	  ->forUsername('zeisss')->forPrefix('/')
-	  ->permission('read')->permission('write');
-	$accessManager->newPolicy()->deny()->forPrefix("/api.md")->permission('read')->forUsername('zeisss');
+	  ->permission('mfs::*');
+	$accessManager->newPolicy()->deny()->forPrefix("/api.md")->permission('mfs::ReadObject')->forUsername('zeisss');
 	if ($accessManager->isGranted('/api.md', 'zeisss', 'read')) {
-		echo "AccessManager test4 failed\n";
+		echo "AccessManager test4 failed - expected ReadObject to be denied\n";
 	}
 }
 
