@@ -775,8 +775,8 @@ function acls() {
 
 
 function config() {
-	$accessManager = new AccessManager;
-	$keyManager = new KeyManager;
+	$accessManager = new AccessManager();
+	$keyManager = new KeyManager();
 
 	# Load config file
 	@require_once(__DIR__ . '/fs.config.php');
@@ -784,6 +784,15 @@ function config() {
 		die('$bucketPath must be configured in fs.config.php - empty');
 	}
 
+	
+	
+	$acls = acls();
+
+	global $DOC;
+	$bucket = new LocalBucket($acls, $bucketPath);
+	@$bucket->putObject('/api.md', $DOC, 'public-read');
+	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
+	
 	# Load further configuration files from bucket itself
 	#  $accessManager->newPolicy()...
 	#  $keyManager->addToken()
@@ -793,14 +802,6 @@ function config() {
 			require($bucket->toDiskPath($path));
 		}
 	}
-	
-	$acls = acls();
-
-	global $DOC;
-	$bucket = new LocalBucket($acls, $bucketPath);
-	@$bucket->putObject('/api.md', $DOC, 'public-read');
-	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
-
 	return array($keyManager, $bucket, $acls, $accessManager);
 }
 
