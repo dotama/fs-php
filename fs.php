@@ -14,21 +14,34 @@ The idea is similar to S3 - do not manage folders but just objects(files).
 
 ## Configuration
 
-The file `fs.php` contains a `config` function. In there, two objects are initialized:
+The file `fs.php` contains a `config` function. It loads the `fs.config.php` file in the same folder,
+which allows the basic configuration. The following objects and variables can be configured:
 
- * KeyManager
+ * `$bucketPath` - MUST be configured to point to the place where the files should be located.
+
+ * `$bucketConfigFiles` - Optional. Can be set to contain further files inside the bucket that should be loaded.
+
+   Example:
+
+   ```
+   $bucketConfigFiles = ['/configs/policies.php'];
+   ```
+
+ * `$keyManager`
+
+    The KeyManager manages the auth tokens that can be used to authenticate with the API.
 
    Use `$keyManager->addBcryptCredentials($name, $hash)` to add a bcrypt hashed password.
    Use `$keyManager->addKey($name, $password)` to add a plain text password. Not recommended!
 
- * AccessManager
+ * `$accessManager`
 
    Use `$accessManager->newPolicy()` to get a Policy object. It supports the following ways to modify the policy:
 
     * `deny()` - Marks this policy to restrict access. by default it grants access
     * `forUsername($username)` - Adds a filter to apply only to the given username. Can be used multiple times.
     * `forPrefix($prefix)` - Adds a filter to apply only to the given prefix or path. Can be used multiple times.
-    * `permission($p)` - Adds a filter for the permission. `read` or `write`.
+    * `permission($p)` - Adds a filter for the permission. See permissions below.
     * `description($text)` - A description for yourself. Code comments work as well.
 
   Example:
@@ -45,17 +58,17 @@ The file `fs.php` contains a `config` function. In there, two objects are initia
     ->permission('mfs::(Delete|Put)*');
   ```
 
- * Bucket
+## Policies
 
-   You cannot configure the bucket really.
+The `$accessManager` allows a more fine grained configuration of users to objects.
 
-The bucket takes the path where files should be created. The KeyManager manages the auth tokens that can be used
-to authenticate with the API.
+### Permissions
 
-By default, `fs.php` also loads two files from the bucket itself, which can be used to customize the config:
-
- * `/configs/keys.php` - Put your `$keyManager` calls here
- * `/configs/policies.php` - Put your `$accessManager` calls here
+ * `mfs::ListObjects`
+ * `mfs::GetObject`
+ * `mfs::PutObject`
+ * `mfs::PutObjectACL`
+ * `mfs::DeleteObject`
 
 ## API
 
@@ -562,7 +575,7 @@ class Server {
 	}
 
 	public function handlePutObjectACL() {
-		$this->requiresAuthentication(true, $this->path);
+		$this->requiresAuthentication('PutObjectACL', $this->path);
 
 		$newACL = file_get_contents('php://input');
 
@@ -762,23 +775,16 @@ function acls() {
 
 
 function config() {
+	$accessManager = new AccessManager;
+	$keyManager = new KeyManager;
+
 	# Load config file
 	@require_once(__DIR__ . '/fs.config.php');
 	if (empty($bucketPath)) {
 		die('$bucketPath must be configured in fs.config.php - empty');
 	}
 
-	$acls = acls();
-
-	global $DOC;
-	$bucket = new LocalBucket($acls, $bucketPath);
-	@$bucket->putObject('/api.md', $DOC, 'public-read');
-	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
-
-	$accessManager = new AccessManager;
-	$keyManager = new KeyManager;
-
-	# Load configuration files from bucket itself
+	# Load further configuration files from bucket itself
 	#  $accessManager->newPolicy()...
 	#  $keyManager->addToken()
 	#  $keyManager->addBcryptCredentials
@@ -787,6 +793,14 @@ function config() {
 			require($bucket->toDiskPath($path));
 		}
 	}
+	
+	$acls = acls();
+
+	global $DOC;
+	$bucket = new LocalBucket($acls, $bucketPath);
+	@$bucket->putObject('/api.md', $DOC, 'public-read');
+	@$bucket->putObject('/README.md', "Manage files here via fs.php\nSee api.md too.", 'public-read');
+
 	return array($keyManager, $bucket, $acls, $accessManager);
 }
 
