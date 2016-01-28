@@ -1,5 +1,7 @@
 <?php
 
+ini_set('track_errors', 1);
+
 $DOC = <<<EOS
 # fs.php
  
@@ -223,17 +225,46 @@ class KeyManager {
 	}
 }
 
-class Events {
-	private $handlers;
+class MessagingService {
+	private $endpoint;
+	private $accesss_key;
+	private $secret_key;
+	private $queue;
 
-	public function register($func) {
-		$this->handlers[] = $func;
+	public Configure($endpoint, $access, $secret, $queue) {
+		$this->endpoint = $endpoint;
+		$this->access = $access;
+		$this->secret = $secret;
+		$this->queue = $queue;
 	}
-
-	public function fire($obj) {
-		foreach($this->handlers as $handler) {
-			$handler($obj);
+	public function Publish($obj) {
+		# Only push writes
+		if ($obj['action'] === 'mfs::PutObject' ||
+			$obj['action'] === 'mfs::PutObjectACL' ||
+			$obj['action'] === 'mfs::DeleteObject') {
+			$this->PushMessage(json_encode($obj), 'application/json');
 		}
+	}
+	public function PushMessage($message, $content_type = 'binary/octet-stream')
+	{
+	  $params = array('http' => array(
+	    'method' => 'POST',
+	    'content' => $message,
+	    'header' => "Authorization: Basic " . base64_encode($this->accesss_key . ":" . $this->secret_key). "\n" .
+	      "Content-Type: $content_type"
+	  ));
+
+	  $ctx = stream_context_create($params);
+	  $fp = @fopen($this->endpoint . "?action=PushMessage&queue={$this->queue}", 'rb', false, $ctx);
+	  if (!$fp) {
+	    throw new Exception("Problem with $this->endpoint, $php_errormsg");
+	  }
+
+	  $response = @stream_get_contents($fp);
+	  if ($response === false) {
+	    throw new Exception("Problem reading data from $this->endpoint, $php_errormsg");
+	  }
+	  return $response;
 	}
 }
 
@@ -587,13 +618,14 @@ class Server {
 				break;
 			default:
 				$this->sendError('Method not allowed.', 405);
-				break;
 			}
 			# If errors occur, this is normally never reached. so we only trigger success events.
-			$this->events->fire(array(
-				'action' => $this->action,
-				'resource' => $this->resource
-			));
+			if (!empty($this->events)) {
+				$this->events->PushMessage(array(
+					'action' => $this->action,
+					'resource' => $this->resource
+				));
+			}
 		} catch (Exception $e) {
 			$this->sendError($e, 500);
 		}
@@ -804,7 +836,6 @@ function acls() {
 function config() {
 	$accessManager = new AccessManager();
 	$keyManager = new KeyManager();
-	$events = new Events();
 
 	# Load config file
 	@require_once(__DIR__ . '/fs.config.php');
@@ -843,10 +874,11 @@ function handleRequest() {
 		$headers[strtolower($key)] = $value;
 	}
 
-	list($keyManager, $bucket, $acls, $accessManager) = config();
-	$server = new Server($bucket, $keyManager, $acls, $accessManager);
+	list($keyManager, $bucket, $acls, $accessManager, $events) = config();
+	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events);
 	$server->handleRequest($host, $method, $path, $headers, $params);
 }
+
 function testPolicies() {
 	$accessManager = new AccessManager;
 	$accessManager->newPolicy()
