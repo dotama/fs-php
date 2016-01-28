@@ -254,7 +254,7 @@ class MessagingService {
 	    'method' => 'POST',
 	    'content' => $message,
 	    'header' => "Authorization: Basic " . base64_encode($this->accesss . ":" . $this->secret). "\n" .
-	      "Content-Type: $content_type"
+	      "Content-Type: $content_type\n"
 	  ));
 
 	  $ctx = stream_context_create($params);
