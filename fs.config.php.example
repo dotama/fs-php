@@ -1,0 +1,19 @@
+<?php
+
+# string $bucketPath
+# Configures the path where the folders are stored which are available via the API. Required.
+# 
+$bucketPath = "/tmp";
+
+# array $bucketConfigFiles
+# Set to extend the configuration with files from the bucket itself, thus allowing the modification of the config
+# via the API itself.
+# 
+# $bucketConfigFiles = [ '/configs/extension.php' ];
+
+
+# object $accessManager
+# Contains the policies to fine-tune access to various objects via the API. See the fs.php/API.md for details.
+
+# object $keyManager
+# Controls the authentication tokens to get access to the API. See the fs.php/API.md for details.
