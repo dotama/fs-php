@@ -231,13 +231,16 @@ class MessagingService {
 	private $secret_key;
 	private $queue;
 
-	public Configure($endpoint, $access, $secret, $queue) {
+	public function Configure($endpoint, $access, $secret, $queue) {
 		$this->endpoint = $endpoint;
 		$this->access = $access;
 		$this->secret = $secret;
 		$this->queue = $queue;
 	}
 	public function Publish($obj) {
+		if (empty($this->endpoint)) {
+			return;
+		}
 		# Only push writes
 		if ($obj['action'] === 'mfs::PutObject' ||
 			$obj['action'] === 'mfs::PutObjectACL' ||
@@ -620,12 +623,10 @@ class Server {
 				$this->sendError('Method not allowed.', 405);
 			}
 			# If errors occur, this is normally never reached. so we only trigger success events.
-			if (!empty($this->events)) {
-				$this->events->PushMessage(array(
-					'action' => $this->action,
-					'resource' => $this->resource
-				));
-			}
+			$this->events->PushMessage(array(
+				'action' => $this->action,
+				'resource' => $this->resource
+			));
 		} catch (Exception $e) {
 			$this->sendError($e, 500);
 		}
@@ -836,6 +837,7 @@ function acls() {
 function config() {
 	$accessManager = new AccessManager();
 	$keyManager = new KeyManager();
+	$events = new MessagingService();
 
 	# Load config file
 	@require_once(__DIR__ . '/fs.config.php');
