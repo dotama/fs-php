@@ -222,6 +222,21 @@ class KeyManager {
 		return false;
 	}
 }
+
+class Events {
+	private $handlers;
+
+	public function register($func) {
+		$this->handlers[] = $func;
+	}
+
+	public function fire($obj) {
+		foreach($this->handlers as $handler) {
+			$handler($obj);
+		}
+	}
+}
+
 class Policy {
 	const EFFECT_ALLOW = 'allow';
 	const EFFECT_DENY = 'deny';
@@ -518,6 +533,7 @@ class Server {
 	private $keyManager;
 	private $acls;
 	private $accessManager;
+	private $events;
 
 	private $headers;
 	private $params;
@@ -526,11 +542,12 @@ class Server {
 	private $path;
 	private $username;
 
-	public function Server($bucket, $keyManager, $acls, $accessManager) {
+	public function Server($bucket, $keyManager, $acls, $accessManager, $events) {
 		$this->bucket = $bucket;
 		$this->keyManager = $keyManager;
 		$this->acls = $acls;
 		$this->accessManager = $accessManager;
+		$this->events = $events;
 	}
 
 	public function handleRequest($host, $method, $path, $headers, $params) {
@@ -572,6 +589,11 @@ class Server {
 		} catch (Exception $e) {
 			$this->sendError($e, false);
 		}
+
+		$this->events->fire(array(
+			'action' => $this->action,
+			'resource' => $this->resource
+		));
 	}
 
 	public function handlePutObjectACL() {
@@ -737,6 +759,9 @@ class Server {
 			if (!$granted) {
 				$this->sendError(new Exception("Access denied ({$permission}) for '{$prefix}'", 403), 403);
 			}
+
+			$this->action = $permission;
+			$this->resource = $prefix;
 		}
 	}
 
@@ -777,14 +802,13 @@ function acls() {
 function config() {
 	$accessManager = new AccessManager();
 	$keyManager = new KeyManager();
+	$events = new Events();
 
 	# Load config file
 	@require_once(__DIR__ . '/fs.config.php');
 	if (empty($bucketPath)) {
 		die('$bucketPath must be configured in fs.config.php - empty');
 	}
-
-	
 	
 	$acls = acls();
 
@@ -802,7 +826,7 @@ function config() {
 			require($bucket->toDiskPath($path));
 		}
 	}
-	return array($keyManager, $bucket, $acls, $accessManager);
+	return [$keyManager, $bucket, $acls, $accessManager, $events];
 }
 
 function handleRequest() {
