@@ -588,12 +588,12 @@ class Server {
 			}
 		} catch (Exception $e) {
 			$this->sendError($e, false);
+		} finally {
+			$this->events->fire(array(
+				'action' => $this->action,
+				'resource' => $this->resource
+			));
 		}
-
-		$this->events->fire(array(
-			'action' => $this->action,
-			'resource' => $this->resource
-		));
 	}
 
 	public function handlePutObjectACL() {
