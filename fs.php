@@ -623,7 +623,7 @@ class Server {
 				$this->sendError('Method not allowed.', 405);
 			}
 			# If errors occur, this is normally never reached. so we only trigger success events.
-			$this->events->PushMessage(array(
+			$this->events->Publish(array(
 				'action' => $this->action,
 				'resource' => $this->resource
 			));
