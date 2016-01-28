@@ -579,20 +579,19 @@ class Server {
 				} else {
 					$this->handlePutObject();	
 				}
-				
 			case "DELETE":
 				$this->handleDeleteObject();
 			default:
 				header("HTTP/1.0 405 Method Not Allowed");
 				$this->sendDebug();
 			}
-		} catch (Exception $e) {
-			$this->sendError($e, false);
-		} finally {
+			# If errors occur, this is normally never reached. so we only trigger success events.
 			$this->events->fire(array(
 				'action' => $this->action,
 				'resource' => $this->resource
 			));
+		} catch (Exception $e) {
+			$this->sendError($e, false);
 		}
 	}
 
@@ -604,7 +603,6 @@ class Server {
 		$this->bucket->updateObjectACL($this->path, $newACL);
 
 		header("HTTP/1.1 204 No Content");
-		die();
 	}
 
 	public function handleListObjects() {
@@ -639,8 +637,7 @@ class Server {
 			$response['common-prefixes'] = $outCommonsPrefixes;
 		}
 
-		header('Content-Type: application/json');
-		die(json_encode($response));
+		$this->sendJson($response);
 	}
 
 	public function handleDeleteObject() {
@@ -653,7 +650,6 @@ class Server {
 		}
 
 		header("HTTP/1.1 204 No Content");
-		die();
 	}
 
 	public function handlePutObject() {
@@ -668,7 +664,6 @@ class Server {
 		$this->bucket->putObject($this->path, $data, $acl);
 
 		header("HTTP/1.1 201 Created");
-		die();
 	}
 
 	public function handleGetObject() {
@@ -693,9 +688,7 @@ class Server {
 		header('Content-Type: ' . $info['mime']);
 		header("HTTP/1.1 200 OK");
 		if ($this->method == "GET") {
-			die($data);
-		} else {
-			die();
+			echo $data;
 		}
 	}
 
@@ -741,6 +734,11 @@ class Server {
 			'code' => $exception->getCode()
 		);
 		die(json_encode($response)."\n");
+	}
+
+	private function sendJson($json) {
+		header('Content-Type: application/json');
+		echo json_encode($json);
 	}
 
 	private function requiresAuthentication($permission, $prefix) {
