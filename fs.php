@@ -253,7 +253,7 @@ class MessagingService {
 	  $params = array('http' => array(
 	    'method' => 'POST',
 	    'content' => $message,
-	    'header' => "Authorization: Basic " . base64_encode($this->accesss . ":" . $this->secret). "\r\n" .
+	    'header' => "Authorization: Basic " . base64_encode($this->access . ":" . $this->secret). "\r\n" .
 	      "Content-Type: $content_type\r\n"
 	  ));
 
