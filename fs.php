@@ -568,22 +568,26 @@ class Server {
 					$this->sendError(new Exception("HEAD not supported here."), 405);
 				else 
 					$this->handleGetObject();
+				break;
 			case "GET":
 				if ($path == "/" || $path == "")
 					$this->handleListObjects();
 				else
 					$this->handleGetObject();
+				break;
 			case "PUT":
 				if (isset($params['acl'])) {
 					$this->handlePutObjectACL();
 				} else {
 					$this->handlePutObject();	
 				}
+				break;
 			case "DELETE":
 				$this->handleDeleteObject();
+				break;
 			default:
-				header("HTTP/1.0 405 Method Not Allowed");
-				$this->sendDebug();
+				$this->sendError('Method not allowed.', 405);
+				break;
 			}
 			# If errors occur, this is normally never reached. so we only trigger success events.
 			$this->events->fire(array(
@@ -591,7 +595,7 @@ class Server {
 				'resource' => $this->resource
 			));
 		} catch (Exception $e) {
-			$this->sendError($e, false);
+			$this->sendError($e, 500);
 		}
 	}
 
