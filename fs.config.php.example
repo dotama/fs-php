@@ -17,3 +17,6 @@ $bucketPath = "/tmp";
 
 # object $keyManager
 # Controls the authentication tokens to get access to the API. See the fs.php/API.md for details.
+
+# object $events MessagingService
+# Can be used to forward events to msg-php for post-processing.
