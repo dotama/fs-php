@@ -1,0 +1,228 @@
+# Example YAML to get you started quickly.
+# Be aware that YAML has indentation based scoping.
+# Code completion support is available so start typing for available options.
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: "1.0.0"
+  title: FS.php
+
+host: apps.moinz.de
+basePath: /fs/fs.php
+schemes:
+  - https
+
+externalDocs:
+  description: Github
+  url: https://github.com/zeisss/fs-php/blob/master/fs.php
+
+definitions: # Schema Objects
+  ListItemsObject:
+    type: object
+    required:
+     - key
+     - size
+     - acl
+     - mtime
+    properties:
+      key:
+        type: string
+      size:
+        type: integer
+        minimum: 0
+      acl:
+        $ref: "#/definitions/acl-schema"
+      mtime:
+        type: string
+        format: date-time
+
+  acl-schema:
+    type: string
+    enum:
+      - 'private'
+      - 'public-read'
+    default: 'private'
+
+parameters: # Parameter Definition Object
+  acl-header:
+    name: X-ACL
+    type: string
+    in: header
+    description: The ACL for the object to be stored along.
+    enum:
+      - 'private'
+      - 'public-read'
+    default: 'private'
+
+# Describe your paths here
+paths:
+  /{key}?acl:
+    put:
+      tags:
+        - write
+      summary: Updates the ACL of an existing object.
+      operationId: PutObjectACL
+      parameters:
+        - name: key
+          required: true
+          in: path
+          description: The key of the object to read.
+          type: string
+
+        - name: body
+          in: body
+          required: true
+          description: A binary serialized version of the object to store.
+          schema:
+            $ref: "#/definitions/acl-schema"
+      responses:
+        '204':
+          description: Successful response, no content
+  /{key}:
+    parameters:
+      - name: key
+        required: true
+        in: path
+        description: The key of the object to operate on.
+        type: string
+    #get:
+    #  description: Returns the given object for **key**
+    head:
+      summary: Checks whether the given object exists.
+      # description: This should be longer.
+      operationId: GetObject-Head
+      tags:
+      - read
+      produces:
+            - '*'
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            'X-ACL':
+              type: string
+              description: The ACL for the object to be stored along.
+              enum:
+                - 'private'
+                - 'public-read'
+              default: 'private'
+            'Content-Length':
+              type: integer
+              enum:
+                - '0'
+    get:
+      summary: Fetches the given object.
+      # description: This should be longer.
+      operationId: GetObject
+      tags:
+      - read
+      produces:
+            - '*'
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            'X-ACL':
+              type: string
+              description: The ACL for the object to be stored along.
+              enum:
+               - 'private'
+               - 'public-read'
+              default: 'private'
+            'Content-Length':
+              type: integer
+            'Content-Type':
+              type: string
+    put:
+      summary: Writes a new object
+      operationId: PutObject
+      tags:
+      - write
+      parameters:
+        - '$ref': "#/parameters/acl-header"
+        - name: body
+          in: body
+          required: true
+          description: A binary serialized version of the object to store.
+          schema:
+            format: binary
+
+      produces:
+        - application/json
+
+      responses:
+        '201':
+          description: The object was written.
+    delete:
+      summary: Deletes the specified object
+      operationId: DeleteObject
+      tags:
+       - write
+      responses:
+        '201':
+          description: The object was written.
+
+
+  # This is a path endpoint. Change it.
+  /:
+    # This is a HTTP operation
+    get:
+      # Describe this verb here. Note: you can use markdown
+      summary: Queries for a list of objects
+      operationId: ListObjects
+      tags:
+       - read
+      # This is array of GET operation parameters:
+      parameters:
+        # An example parameter that is in query and is required
+        - name: prefix
+          in: query
+          description: The prefix to filter objects by
+          required: false
+          type: string
+          pattern: '/.*'
+        - name: delimiter
+          in: query
+          description: Optional separator for the path. Limits the depth of searches.
+          type: string
+          enum:
+            - '/'
+
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            title: ListObjectsResponse
+            type: object
+            required:
+             - prefix
+            properties:
+              prefix:
+                type: string
+
+              delimiter:
+                type: string
+
+              objects:
+                type: array
+
+                items:
+                  $ref: "#/definitions/ListItemsObject"
+              common-prefixes:
+                type: array
+                items:
+                  type: string
+            example:
+              prefix: /localnet
+              delimiter: /
+              objects:
+                - key: README.md
+                  size: 44
+                  acl: public-read
+                  mime: text/plain
+                  mtime: 2016-02-29T23:12:58+00:00
