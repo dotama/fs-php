@@ -34,7 +34,8 @@ build:
         - script:
            name: show hash sums
            code: |
-               info $(cat $WERCKER_OUTPUT_DIR/dist/SHASUMS)
+               info "$(cat $WERCKER_OUTPUT_DIR/dist/SHASUMS)"
+               setMessage "SHA1: $(cat $WERCKER_OUTPUT_DIR/dist/SHASUMS)"
 
         - script:
             name: Upload Build Artifact
@@ -43,8 +44,9 @@ build:
                 test -z "$FS_PASSWORD" && fail "Env FS_PASSWORD missing."
                 test -z "$FS_ENDPOINT" && fail "Env FS_ENDPOINT missing."
 
-                file="$WERCKER_OUTPUT_DIR/dist/fs-php.tar.gz"
-                path="/artifacts/fs-php/${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}/fs-php.tar.gz"
+                name=fs-php
+                file="$WERCKER_OUTPUT_DIR/dist/${name}.tar.gz"
+                path="/artifacts/${name}/${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}/${name}.tar.gz"
                 acl=public-read
 
                 # debug output
@@ -65,6 +67,9 @@ deploy:
             code: |
                 site_name=${DEPLOY_SITENAME:-fs}
                 desired_version="${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}"
+
+                test -z "$DEPLOY_TOKEN" && fail "Env DEPLOY_TOKEN missing."
+
                 curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
     after-steps:
