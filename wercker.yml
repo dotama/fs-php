@@ -57,7 +57,7 @@ build:
 
                 # do the upload
                 basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
-                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' --output upload_result.json -w '%{http_code}')
+                upload=$(${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' --output upload_result.json -w '%{http_code}')
                 if [ "$upload" -eq 201 ]; then
                   success "Upload completed."
                 else
