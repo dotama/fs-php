@@ -12,7 +12,7 @@ build:
             code: |
                 mkdir -p $WERCKER_OUTPUT_DIR/pkg/fs-php
                 cp index.html *.php $WERCKER_OUTPUT_DIR/pkg/fs-php/
-                echo "Branch: $WERCKER_GIT_BRANCH\nCommit: $WERCKER_GIT_COMMIT" > $WERCKER_OUTPUT_DIR/VERSION
+                echo "Branch: $WERCKER_GIT_BRANCH\nCommit: $WERCKER_GIT_COMMIT" > $WERCKER_OUTPUT_DIR/pkg/fs-php/VERSION
         - yudai/targz@0.2.1:
           input: $WERCKER_OUTPUT_DIR/pkg
           output: $WERCKER_OUTPUT_DIR/dist
