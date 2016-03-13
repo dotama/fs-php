@@ -34,7 +34,7 @@ build:
 
                 # do the upload
                 basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
-                echo ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
+                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
 
 deploy:
     steps:
