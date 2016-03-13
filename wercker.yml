@@ -24,7 +24,7 @@ build:
         - script:
             name: Upload Build Artifact
             code: |
-                file="./dist/fs-php.tar.gz"
+                file="$WERCKER_OUTPUT_DIR/dist/fs-php.tar.gz"
                 path="/artifacts/fs-php/${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}/fs-php.tar.gz"
                 acl=public-read
 
