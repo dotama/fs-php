@@ -5,7 +5,7 @@ build:
         - script:
             name: Validate PHP files
             code: |
-                php -l fs.php
+                find . -name '*.php' | xargs -I{} php -l {}
 
         - script:
             name: Run Unit Tests
