@@ -27,7 +27,6 @@ class KeyManager {
 	}
 }
 
-
 class Policy {
 	const EFFECT_ALLOW = 'allow';
 	const EFFECT_DENY = 'deny';
@@ -74,6 +73,7 @@ class Policy {
 		return $this;
 	}
 }
+
 class AccessManager {
 	private $policies;
 

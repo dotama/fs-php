@@ -10,7 +10,7 @@ build:
         - script:
             name: Run Unit Tests
             code: |
-                php tests.php
+                php tests.php && success "All tests successfully."
 
         - script:
             name: copy files to pkg/
@@ -25,6 +25,8 @@ build:
                 echo "WerckerApplicationUrl: $WERCKER_APPLICATION_URL" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
                 echo "WerckerBuildUrl: $WERCKER_BUILD_URL" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
 
+                debug "$(cat $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO)"
+
         - yudai/targz@0.2.1:
           input: $WERCKER_OUTPUT_DIR/pkg
           output: $WERCKER_OUTPUT_DIR/dist
@@ -32,11 +34,15 @@ build:
         - script:
            name: show hash sums
            code: |
-               cat $WERCKER_OUTPUT_DIR/dist/SHASUMS
+               info $(cat $WERCKER_OUTPUT_DIR/dist/SHASUMS)
 
         - script:
             name: Upload Build Artifact
             code: |
+                test -z "$FS_USER" && fail "Env FS_USER missing."
+                test -z "$FS_PASSWORD" && fail "Env FS_PASSWORD missing."
+                test -z "$FS_ENDPOINT" && fail "Env FS_ENDPOINT missing."
+
                 file="$WERCKER_OUTPUT_DIR/dist/fs-php.tar.gz"
                 path="/artifacts/fs-php/${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}/fs-php.tar.gz"
                 acl=public-read
@@ -54,7 +60,6 @@ build:
 
 deploy:
     steps:
-
         - script:
             name: Deploy artifact
             code: |
