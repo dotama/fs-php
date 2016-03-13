@@ -54,9 +54,4 @@ deploy:
                 desired_version="${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}"
                 curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
-    after-steps:
-        - sherzberg/slack-notify@0.0.11:
-            url: https://hooks.slack.com/services/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
-            channel: zeisss-wercker
-            username: werckerbot
-            notify_on: "failed"
+    
