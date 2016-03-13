@@ -67,3 +67,7 @@ deploy:
                 desired_version="${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}"
                 curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
+    after-steps:
+      - wercker/slack-notifier@1.2.1:
+          url: https://hooks.slack.com/services/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
+          
