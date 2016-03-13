@@ -12,7 +12,14 @@ build:
             code: |
                 mkdir -p $WERCKER_OUTPUT_DIR/pkg/fs-php
                 cp index.html *.php $WERCKER_OUTPUT_DIR/pkg/fs-php/
-                cp VERSION $WERCKER_OUTPUT_DIR
+
+                echo "Branch: $WERCKER_GIT_BRANCH" > $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
+                echo "Commit: $WERCKER_GIT_COMMIT" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
+                echo "CI: $CI" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
+                echo "WerckerStartedBy: $WERCKER_STARTED_BY" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
+                echo "WerckerApplicationUrl: $WERCKER_APPLICATION_URL" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
+                echo "WerckerBuildUrl: $WERCKER_BUILD_URL" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
+
         - yudai/targz@0.2.1:
           input: $WERCKER_OUTPUT_DIR/pkg
           output: $WERCKER_OUTPUT_DIR/dist
@@ -21,22 +28,35 @@ build:
            code: |
                cat $WERCKER_OUTPUT_DIR/dist/SHASUMS
 
+        - script:
+            name: Upload Build Artifact
+            code: |
+                file="$WERCKER_OUTPUT_DIR/dist/fs-php.tar.gz"
+                path="/artifacts/fs-php/${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}/fs-php.tar.gz"
+                acl=public-read
+
+                # debug output
+                echo "Local file: $(ls -lah $file)"
+                echo "ACL: ${acl}"
+                echo "Remote path: ${path}"
+
+                # do the upload
+                basecurl="curl -sSv -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
+                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
+
 deploy:
     steps:
-        - script:
-            name: Upload Build Artifact 
-            code: |
-                VERSION=$(cat VERSION)
-                file="./dist/fs-php.tar.gz"
-                path="/artifacts/fs-php/${VERSION}/fs-php.tar.gz"
-                basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
-                acl=public-read
-                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
 
         - script:
             name: Deploy artifact
             code: |
                 site_name=${DEPLOY_SITENAME:-fs}
-                desired_version=$(cat VERSION)
+                desired_version="${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}"
                 curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
+    after-steps:
+        - sherzberg/slack-notify@0.0.11:
+            url: https://hooks.slack.com/services/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
+            channel: zeisss-wercker
+            username: werckerbot
+            notify_on: "failed"
