@@ -69,5 +69,4 @@ deploy:
                 echo $?
     after-steps:
       - wercker/slack-notifier@1.2.1:
-          url: https://hooks.slack.com/services/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
-          
+          url: $DEPLOY_SLACK_URL
