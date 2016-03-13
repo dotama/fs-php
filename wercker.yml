@@ -3,9 +3,14 @@ box: php
 build:
     steps:
         - script:
-            name: Validate fs.php
+            name: Validate PHP files
             code: |
                 php -l fs.php
+
+        - script:
+            name: Run Unit Tests
+            code: |
+                php tests.php
 
         - script:
             name: copy files to pkg/
@@ -23,6 +28,7 @@ build:
         - yudai/targz@0.2.1:
           input: $WERCKER_OUTPUT_DIR/pkg
           output: $WERCKER_OUTPUT_DIR/dist
+
         - script:
            name: show hash sums
            code: |
@@ -36,13 +42,15 @@ build:
                 acl=public-read
 
                 # debug output
-                echo "Local file: $(ls -lah $file)"
-                echo "ACL: ${acl}"
-                echo "Remote path: ${path}"
+                setMessage "Artifact: $(ls -lah $file)"
+                info "Local file: $(ls -lah $file)"
+                info "ACL: ${acl}"
+                info "Remote path: ${path}"
 
                 # do the upload
                 basecurl="curl -sSv -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
                 ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
+                success "Upload completed."
 
 deploy:
     steps:
@@ -54,4 +62,3 @@ deploy:
                 desired_version="${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}"
                 curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
-    
