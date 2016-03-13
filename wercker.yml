@@ -28,9 +28,13 @@ build:
                 path="/artifacts/fs-php/${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}/fs-php.tar.gz"
                 acl=public-read
 
+                echo "Local file: $(ls -lah $file)"
+                echo "ACL: ${acl}"
+                echo "Remote path: ${path}"
+
                 # do the upload
                 basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
-                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
+                echo ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
 
 deploy:
     steps:
