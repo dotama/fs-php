@@ -56,9 +56,13 @@ build:
                 info "Remote path: ${path}"
 
                 # do the upload
-                basecurl="curl -sSv -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
-                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
-                success "Upload completed."
+                basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
+                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' --output upload_result.json -w '%{http_code}')
+                if [ "$upload" -eq 201 ]; then
+                  success "Upload completed."
+                else
+                  fail "upload: $(cat upload_result.json)"
+                fi
 
 deploy:
     steps:
@@ -70,7 +74,7 @@ deploy:
 
                 test -z "$DEPLOY_TOKEN" && fail "Env DEPLOY_TOKEN missing."
 
-                curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
+                curl -H"Authorization: bearer ${DEPLOY_TOKEN}" "${DEPLOY_ENDPOINT}" --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
     after-steps:
       - wercker/slack-notifier@1.2.1:
