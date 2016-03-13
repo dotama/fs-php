@@ -74,8 +74,12 @@ deploy:
 
                 test -z "$DEPLOY_TOKEN" && fail "Env DEPLOY_TOKEN missing."
 
-                curl -H"Authorization: bearer ${DEPLOY_TOKEN}" "${DEPLOY_ENDPOINT}" --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
-                echo $?
+                deployResult=$(curl -H"Authorization: bearer ${DEPLOY_TOKEN}" "${DEPLOY_ENDPOINT}" --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" --output deploy.json -w '%{http_code}')
+                if [ "$deployResult" -eq 200 ]; then
+                  success "Deploy completed."
+                else
+                  fail "$(cat deploy.json)"
+                fi
     after-steps:
       - wercker/slack-notifier@1.2.1:
           url: $DEPLOY_SLACK_URL
