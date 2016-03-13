@@ -21,22 +21,24 @@ build:
            code: |
                cat $WERCKER_OUTPUT_DIR/dist/SHASUMS
 
+        - script:
+            name: Upload Build Artifact
+            code: |
+                file="./dist/fs-php.tar.gz"
+                path="/artifacts/fs-php/${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}/fs-php.tar.gz"
+                acl=public-read
+
+                # do the upload
+                basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
+                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
+
 deploy:
     steps:
-        - script:
-            name: Upload Build Artifact 
-            code: |
-                VERSION=$(cat VERSION)
-                file="./dist/fs-php.tar.gz"
-                path="/artifacts/fs-php/${VERSION}/fs-php.tar.gz"
-                basecurl="curl -sS -u${FS_USER}:${FS_PASSWORD} ${FS_ENDPOINT}"
-                acl=public-read
-                ${basecurl}${path}.ignore -XPUT --data-binary @$file -H"X-ACL: ${acl}" -H'Content-Type: application/octet-stream' -v
 
         - script:
             name: Deploy artifact
             code: |
                 site_name=${DEPLOY_SITENAME:-fs}
-                desired_version=$(cat VERSION)
+                desired_version="${WERCKER_GIT_BRANCH}-${WERCKER_GIT_COMMIT}"
                 curl -H"Authorization: bearer ${DEPLOY_TOKEN}" http://apps.moinz.de/deploy.php --data-urlencode "site=${site_name}" --data-urlencode "desired_version=${desired_version}" -i
                 echo $?
