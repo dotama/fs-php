@@ -1,7 +1,7 @@
 <?php
 
-require_once(__DIR__ . '/iam.php');
-require_once(__DIR__ . '/filesystem.php');
+require_once(__DIR__ . '/lib/iam.php');
+require_once(__DIR__ . '/lib/filesystem.php');
 
 function fail($message) {
   echo "FAIL: ";
