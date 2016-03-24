@@ -2,8 +2,7 @@
 
 ini_set('track_errors', 1);
 
-require_once(__DIR__ . '/lib/iam.php');
-require_once(__DIR__ . '/lib/filesystem.php');
+require_once(__DIR__ . '/lib/autoload.php');
 
 function config() {
 	$accessManager = new AccessManager();

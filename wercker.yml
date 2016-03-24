@@ -5,12 +5,15 @@ build:
         - script:
             name: Validate PHP files
             code: |
-                find . -name '*.php' | xargs -I{} php -l {}
+              find . -name '*.php' | xargs -I{} php -l {}
 
+        - install-packages:
+            packages: git unzip
+        - mbrevda/composer-install@1.0.1
         - script:
             name: Run Unit Tests
             code: |
-                php tests.php && success "All tests successfully."
+              ./vendor/bin/phpunit
 
         - script:
             name: copy files to pkg/

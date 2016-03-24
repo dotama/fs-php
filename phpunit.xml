@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<phpunit bootstrap="tests/bootstrap.php">
+  <testsuites>
+    <testsuite name="IAM Tests">
+      <file>tests/PolicyTest.php</file>
+      <file>tests/AccessManagerTest.php</file>
+      <file>tests/KeyManagerTest.php</file>
+    </testsuite>
+  </testsuites>
+</phpunit>
