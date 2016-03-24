@@ -72,7 +72,7 @@ Each operations equals on permissions that is expected to be granted by a policy
 
 ## API
 
-All requests must go to the `fs.php` script. If you want, you can play around with your webserver and 
+All requests must go to the `fs.php` script. If you want, you can play around with your webserver and
 rewrite the URLs. You may need to modify the initial `handleRequest` method to make it work though. You can add
 `?debug` to the URL to get a simple request dump instead of performing the actual request.
 
@@ -90,7 +90,7 @@ Authentication is managed via http basic auth. See `Configuration` for more deta
 ### Listing objects
 
 Lists all objects in the bucket. Use query parameter `prefix` to define a common prefix string. If given, it must
-start with a /. 
+start with a /.
 
 ```
 $ curl \$baseurl/?prefix=/
@@ -105,7 +105,7 @@ $ curl \$baseurl/?prefix=/
 ```
 
 By default, all objects are listed. If you just want to discover, you can pass `delimiter=/`, which splits the keys
-and list the prefix in the field `common-prefixes`. In combination with the `prefix` parameter this allows to list 
+and list the prefix in the field `common-prefixes`. In combination with the `prefix` parameter this allows to list
 files and folders easily.
 
 ### Get Object
@@ -147,8 +147,8 @@ The server responds with a `204 No Content` if the delete was successful. If no 
 
 ## Known Problems
 
-Previouslys on my hoster, PUTing a file with endings like `.txt` or `.gif` returned an early `Method Not Allowed` from the 
+Previouslys on my hoster, PUTing a file with endings like `.txt` or `.gif` returned an early `Method Not Allowed` from the
 NGinx server.
 
-If pushing binary files with `curl`, set the `Content-Type` header to something binary. Otherwise the server tries to 
+If pushing binary files with `curl`, set the `Content-Type` header to something binary. Otherwise the server tries to
 parse the request and throws an error.
