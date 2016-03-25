@@ -1,8 +1,4 @@
 <?php
-echo "loaded IAMTest\n";
-
-require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../lib/iam.php';
 
 class PolicyTest extends PHPUnit_Framework_TestCase {
   public function testDeny() {
