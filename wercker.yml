@@ -19,7 +19,7 @@ build:
             name: copy files to pkg/
             code: |
                 mkdir -p $WERCKER_OUTPUT_DIR/pkg/fs-php
-                cp -r lib/ *.example *.html *.php $WERCKER_OUTPUT_DIR/pkg/fs-php/
+                cp -r lib/ *.example *.php $WERCKER_OUTPUT_DIR/pkg/fs-php/
 
                 echo "Branch: $WERCKER_GIT_BRANCH" > $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
                 echo "Commit: $WERCKER_GIT_COMMIT" >> $WERCKER_OUTPUT_DIR/pkg/fs-php/INFO
