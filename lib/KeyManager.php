@@ -6,6 +6,7 @@ class KeyManager {
 	public function KeyManager() {
 		$this->keys = array();
 	}
+
 	public function addBcryptCredentials($name, $hash) {
 		$key = array(
 			'access' => $name,
@@ -13,6 +14,7 @@ class KeyManager {
 		);
 		$this->keys[] = $key;
 	}
+
 	public function addKey($name, $password) {
 		$this->addBcryptCredentials($name, password_hash($password, PASSWORD_DEFAULT));
 	}

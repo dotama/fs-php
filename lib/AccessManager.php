@@ -1,6 +1,5 @@
 <?php
 
-
 class Policy {
 	const EFFECT_ALLOW = 'allow';
 	const EFFECT_DENY = 'deny';
