@@ -10,8 +10,9 @@ function config() {
 	$events = new MessagingService();
 
 	# Load config file
-	@require_once(__DIR__ . '/fs.config.php');
+	@include_once(__DIR__ . '/fs.config.php');
 	if (empty($bucketPath)) {
+		header("HTTP/1.1 500 Internal Server Errror");
 		die('$bucketPath must be configured in fs.config.php - empty');
 	}
 
