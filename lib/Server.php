@@ -22,6 +22,46 @@ class Server {
 		$this->events = $events;
 	}
 
+	// return [$name, $resource, callable]; or Exception
+	private function getHandler() {
+		if (isset($this->params['debug'])) {
+			return ['SendDebug', $this->path, 'handleDebug'];
+		}
+		switch ($this->method) {
+		case "HEAD":
+			if ($this->path == "/" || $this->path == "") {
+				throw new Exception("HEAD not supported here", 405);
+			} else {
+				$info = $this->bucket->getObjectInfo($this->path);
+				if ($this->acls->allowsUnauthorizedRead($info['acl'])) {
+					return ['GetPublicObject', $this->path, 'handleGetObject'];
+				}
+				return ['GetObject', $this->path, 'handleGetObject'];
+			}
+		case "GET":
+			if ($this->path == "/" || $this->path == "")
+				return ['ListObjects', empty($this->params['prefix']) ? '/' : $this->params['prefix'], 'handleListObjects'];
+			else {
+				$info = $this->bucket->getObjectInfo($this->path);
+				if ($this->acls->allowsUnauthorizedRead($info['acl'])) {
+					return ['GetPublicObject', $this->path, 'handleGetObject'];
+				}
+				return ['GetObject', $this->path, 'handleGetObject'];
+
+			}
+		case "PUT":
+			if (isset($this->params['acl'])) {
+				return ['PutObjectACL', $this->path, 'handlePutObjectACL'];
+			} else {
+				return ['PutObject', $this->path, 'handlePutObject'];
+			}
+		case "DELETE":
+			return ['DeleteObject', $this->path, 'handleDeleteObject'];
+		default:
+			throw new Exception('Method not allowed', 405);
+		}
+	}
+
 	public function handleRequest($host, $method, $path, $headers, $params) {
 		$this->headers = $headers;
 		$this->params = $params;
@@ -30,49 +70,34 @@ class Server {
 		$this->path = $path;
 
 		try {
-			if (isset($params['debug'])) {
-				$this->sendDebug();
-				return;
-			}
-			switch ($method) {
-			case "HEAD":
-				if ($path == "/" || $path == "")
-					$this->sendError(new Exception("HEAD not supported here."), 405);
-				else
-					$this->handleGetObject();
-				break;
-			case "GET":
-				if ($path == "/" || $path == "")
-					$this->handleListObjects();
-				else
-					$this->handleGetObject();
-				break;
-			case "PUT":
-				if (isset($params['acl'])) {
-					$this->handlePutObjectACL();
-				} else {
-					$this->handlePutObject();
-				}
-				break;
-			case "DELETE":
-				$this->handleDeleteObject();
+			list($name, $resource, $handler) = $this->getHandler();
+
+			switch($name) {
+			// Public functions need no auth check.
+			case "GetPublicObject":
+			case "SendDebug":
 				break;
 			default:
-				$this->sendError('Method not allowed.', 405);
+				$this->requiresAuthentication($name, $resource);
 			}
-			# If errors occur, this is normally never reached. so we only trigger success events.
+			call_user_func([$this, $handler]);
+
+			# If errors occur, this is normally never reached. so we only publish success events.
 			$this->events->Publish(array(
-				'action' => $this->action,
+				'username' => $this->username,
+				'action' => $name,
 				'resource' => $this->resource
 			));
 		} catch (Exception $e) {
-			$this->sendError($e, 500);
+			$code = 500;
+			if ($e->getCode() != 0) {
+				$code = $e->getCode();
+			}
+			$this->sendError($e, $code);
 		}
 	}
 
 	public function handlePutObjectACL() {
-		$this->requiresAuthentication('PutObjectACL', $this->path);
-
 		$newACL = file_get_contents('php://input');
 
 		$this->bucket->updateObjectACL($this->path, $newACL);
@@ -94,8 +119,6 @@ class Server {
 			}
 		}
 
-		$this->requiresAuthentication('ListObjects', $prefix);
-
 		$outObjects = array();
 		$outCommonsPrefixes = array();
 		$this->bucket->listObjects($prefix, $showCommonPrefixes, $outObjects, $outCommonsPrefixes);
@@ -116,8 +139,6 @@ class Server {
 	}
 
 	public function handleDeleteObject() {
-		$this->requiresAuthentication('DeleteObject', $this->path);
-
 		$found = $this->bucket->deleteObject($this->path);
 
 		if (!$found) {
@@ -128,8 +149,6 @@ class Server {
 	}
 
 	public function handlePutObject() {
-		$this->requiresAuthentication('PutObject', $this->path);
-
 		$acl = NULL;
 		if (!empty($this->headers['x-acl'])) {
 			$acl = $this->headers['x-acl'];
@@ -143,15 +162,10 @@ class Server {
 
 	public function handleGetObject() {
 		$info = $this->bucket->getObjectInfo($this->path);
-
-		if (!$this->acls->allowsUnauthorizedRead($info['acl'])) {
-			$this->requiresAuthentication('GetObject', $this->path);
-		}
-
 		$data = $this->bucket->getObject($this->path);
 
 		if ($data == NULL) {
-			$this->sendError(new Exception('Not found', 404), 404);
+			throw new Exception('Not found', 404);
 		}
 
 		header('x-acl: ' . $info['acl']);
@@ -167,16 +181,15 @@ class Server {
 		}
 	}
 
-	private function sendDebug() {
+	private function handleDebug() {
 		header('Content-Type: text/plain');
 
 		echo "Host: " . $this->host . "\n";
 		echo "Method: " . $this->method ."\n";
 		echo "Path: " . $this->path ."\n";
 		echo "\n";
-		echo "Headers: " . json_encode($this->headers) . "\n";
-		echo "Params: " . json_encode($this->params) . "\n";
-		die();
+		echo "Headers: " . json_encode($this->headers, JSON_UNESCAPED_SLASHES) . "\n";
+		echo "Params: " . json_encode($this->params, JSON_UNESCAPED_SLASHES) . "\n";
 	}
 
 	private function sendError($exception, $code = 400) {
@@ -208,19 +221,19 @@ class Server {
 			'message' => $exception->getMessage(),
 			'code' => $exception->getCode()
 		);
-		die(json_encode($response)."\n");
+		die(json_encode($response, JSON_UNESCAPED_SLASHES)."\n");
 	}
 
 	private function sendJson($json) {
 		header('Content-Type: application/json');
-		echo json_encode($json);
+		echo json_encode($json, JSON_UNESCAPED_SLASHES);
 	}
 
 	private function requiresAuthentication($permission, $prefix) {
 		if (!$this->checkAuthentication()) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
 
-			$this->sendError(new Exception("Authentication required", 401), 401);
+			throw new Exception("Authentication required", 401);
 		} else {
 			$permission = 'mfs::' . $permission;
 			$granted = $this->accessManager->isGranted(
@@ -230,10 +243,9 @@ class Server {
 			);
 
 			if (!$granted) {
-				$this->sendError(new Exception("Access denied ({$permission}) for '{$prefix}'", 403), 403);
+				throw new Exception("Access denied - {$permission} for '{$prefix}'", 403);
 			}
 
-			$this->action = $permission;
 			$this->resource = $prefix;
 		}
 	}

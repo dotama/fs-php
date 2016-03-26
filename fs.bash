@@ -2,6 +2,13 @@
 
 source $HOME/.fscfg
 
+# jq installed?
+if [ "$(command -v jq)" = "" ]; then
+  jq() {
+    cat -
+  }
+fi
+
 # cli
 basecurl="curl -sS -u${credentials} ${url}"
 action=$1

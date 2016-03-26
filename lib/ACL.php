@@ -40,12 +40,10 @@ class ACLs {
 		return ($acl['mode'] & 04) > 0;
 	}
 
-
 	public static function defaultACLs() {
 		$acls = new ACLs();
 		$acls->define('public-read', 0664);
 		$acls->define('private', 0660, true);
 		return $acls;
 	}
-
 }
