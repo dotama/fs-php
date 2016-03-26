@@ -34,6 +34,9 @@ class LocalBucket {
 
 	public function getObjectInfo($key) {
 		$diskPath = $this->toDiskPath($key);
+		if (!file_exists($diskPath)) {
+			return NULL;
+		}
 		$stat = stat($diskPath);
 
 		$time = new DateTime('now', new DateTimeZone('UTC'));

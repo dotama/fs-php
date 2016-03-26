@@ -36,6 +36,10 @@ class LocalBucketTest {
     	$bucket->putObject('/folder/test2.txt', "Hello World");
     	$bucket->putObject('/a/b/c/d.md', 'Deep recursive folder fiels.', 'public-read');
 
+      // GetObjectInfo returns NULLL for wrong files
+      $obj = $bucket->getObjectInfo('/doesnotexist');
+      $this->assertNull($obj);
+
       // Test reading object metadata
     	$obj = $bucket->getObjectInfo("/test.txt");
       $this->assertNotNull($obj);
