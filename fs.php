@@ -39,7 +39,17 @@ function handleRequest() {
 	$method = $_SERVER['REQUEST_METHOD'];
 	$path = $_SERVER['PATH_INFO'];
 	$params = $_GET;
-	$headers = getallheaders();
+	if (!function_exists('getallheaders')) {
+		$headers = array();
+		foreach ($_SERVER as $name => $value) {
+			/* RFC2616 (HTTP/1.1) defines header fields as case-insensitive entities. */
+			if (strtolower(substr($name, 0, 5)) == 'http_') {
+				$headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+			}
+		}
+	} else {
+	   $headers = getallheaders();
+	}
 	foreach($headers AS $key => $value) {
 		$headers[strtolower($key)] = $value;
 	}
