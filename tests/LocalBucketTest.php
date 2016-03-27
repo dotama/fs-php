@@ -7,6 +7,22 @@ class LocalBucketTest {
     return $bucket;
   }
 
+  public function testInvalidDiskPaths() {
+    $paths = [
+      '../foo',
+      '/../../etc/passwd'
+    ];
+    $bucket = $this->givenLocalBucket();
+
+    foreach ($diskPaths AS $input => $output) {
+      try {
+        $result = $bucket->toDiskPath($input);
+        $this->fail();
+      } catch (Exception $e) {
+      }
+    }
+  }
+
   public function testToDiskPath() {
     $bucket = $this->givenLocalBucket();
     // Test disk path mapping
