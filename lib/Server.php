@@ -252,7 +252,6 @@ class Server {
 
 	private function checkAuthentication() {
 		$auth = $this->headers['authorization'];
-
 		$fields = explode(" ", $auth);
 
 		if (sizeof($fields) != 2) {

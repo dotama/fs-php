@@ -18,18 +18,18 @@ class LocalBucket {
 		$files = glob($path . '*', GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE);
 
 		#echo json_encode($files) . "\n"
-        foreach ($files as $file) {
-        	#echo "# $file\n";
-        	if (substr($file, -1) == '/') {
-				if ($showCommonPrefixes) {
-					$outCommonsPrefixes[] = $this->toBucketKey($file);
-				} else {
-					$this->listObjects($this->toBucketKey($file), $showCommonPrefixes, $outObjects, $outCommonsPrefixes);
-				}
-        	} else {
+		foreach ($files as $file) {
+			#echo "# $file\n";
+			if (substr($file, -1) == '/') {
+		if ($showCommonPrefixes) {
+			$outCommonsPrefixes[] = $this->toBucketKey($file);
+		} else {
+			$this->listObjects($this->toBucketKey($file), $showCommonPrefixes, $outObjects, $outCommonsPrefixes);
+		}
+			} else {
 				$outObjects[] = $this->getObjectInfo($this->toBucketKey($file));
-        	}
-        }
+			}
+		}
 	}
 
 	public function getObjectInfo($key) {
@@ -51,7 +51,7 @@ class LocalBucket {
 			'acl' => $acl['name'],
 			'mime' => mime_content_type($diskPath),
 			'mtime' => $time->format(DATE_ATOM)
-        );
+		);
 	}
 
 	public function putObject($key, $data, $aclName = NULL) {
