@@ -20,7 +20,11 @@ build:
             code: |
               # we are in the code root folder, so run server in the background and execute curl tests
               cp ./tests/ints/fs.config.php ./fs.config.php
+
+              info "Starting example server"
               php -S localhost:8000 &
+
+              info "Running tests"
               WITHAUTH='-u test:test' ENDPOINT=http://localhost:8000/fs.php ./tests/ints/v1-api.bash
 
         - script:
