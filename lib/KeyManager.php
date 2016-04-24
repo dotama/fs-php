@@ -30,7 +30,7 @@ class KeyManager {
 
 	public function getMetrics() {
 		return [
-			array('name' => 'key_count', 'type'=>'gauge', 'value' => sizeof($this->keys) )
+			array('name' => 'auth_key_count', 'type'=>'gauge', 'value' => sizeof($this->keys) )
 		];
 	}
 }

@@ -164,17 +164,17 @@ class LocalBucket {
 		return [
 			# Bucket Stats
 			array('type' => 'summary', 'help' => 'Insight into the stored objects',
-			      'name' => 'object_size',  'tags'=>'quantile="0.5"',
+			      'name' => 'bucket_object_size',  'tags'=>'quantile="0.5"',
 						'value' => $allObjects[(int)(sizeof($allObjects) * 0.5)]['size']),
-			array('name' => 'object_size', 'tags'=>'quantile="0.9"',
+			array('name' => 'bucket_object_size', 'tags'=>'quantile="0.9"',
 					'value' => $allObjects[(int)(sizeof($allObjects) * 0.9)]['size']),
-			array('name' => 'object_size', 'tags'=>'quantile="0.99"',
+			array('name' => 'bucket_object_size', 'tags'=>'quantile="0.99"',
 						'value' => $allObjects[(int)(sizeof($allObjects) * 0.99)]['size']),
-			array('name' => 'object_size', 'tags'=>'quantile="1"',
+			array('name' => 'bucket_object_size', 'tags'=>'quantile="1"',
 						'value' => $allObjects[sizeof($allObjects) -1]['size']),
 
-			array('name' => 'object_size_count', 'value' => sizeof($allObjects) ),
-			array('name' => 'object_size_sum', 'value' => $allObjectsSum)
+			array('name' => 'bucket_object_size_count', 'value' => sizeof($allObjects) ),
+			array('name' => 'bucket_object_size_sum', 'value' => $allObjectsSum)
 		];
 	}
 }
