@@ -7,7 +7,7 @@ class Policy {
 	private $id;
 	private $description;
 	public $usernames;
-	public $prefixes;
+	public $resources;
 
 	public $effect = Policy::EFFECT_ALLOW;
 	public $permissions = array();
@@ -26,9 +26,13 @@ class Policy {
 		return $this;
 	}
 
-	public function forPrefix($prefix) {
-		$this->prefixes[] = $prefix;
+	public function forResource($resource) {
+		$this->resources[] = $resource;
 		return $this;
+	}
+	// @deprecated
+	public function forPrefix($prefix) {
+		return $this->forResource('msg:' . $prefix);
 	}
 
 	public function forUsername($text) {
@@ -60,23 +64,8 @@ class AccessManager {
 		return $policy;
 	}
 
-	// addPolicy allows acces for the given $username for the given $prefix.
-	public function addPolicy($username, $prefix, $allowRead, $allowWrite) {
-		$policy = $this->newPolicy()
-		    ->description('addPolicy')
-			->forUsername($username)
-			->forPrefix($prefix);
-
-		if ($allowRead) {
-			$policy->permission('read');
-		}
-		if ($allowWrite) {
-			$policy->permission('write');
-		}
-		return $policy;
-	}
-
 	public function isGranted($prefix, $username, $permission) {
+		$resource = 'msg:' . $prefix;
 		$allowed = false;
 		// Logic is as follows:
 		// * If a policy has usernames, one must match
@@ -94,16 +83,9 @@ class AccessManager {
 				}
 			}
 
-			// Check prefixes
-			if (sizeof($policy->prefixes) > 0) {
-				$found = false;
-				foreach($policy->prefixes as $policyPrefix) {
-					if (strpos($prefix, $policyPrefix) === 0) { // match!
-						$found = true;
-					}
-				}
-
-				if (!$found) {
+			// Check resources
+			if (sizeof($policy->resources) > 0) {
+				if (!AccessManager::matches($resource, $policy->resources)) {
 					continue;
 				}
 			}
@@ -115,12 +97,10 @@ class AccessManager {
 
 			// Apply result
 			if (!$policy->hasAccess()) {
-				#echo "isGranted($username, $prefix, $permission) = false # access\n";
 				return false;
 			}
 			$allowed = true;
 		}
-		#echo "isGranted($username, $prefix, $permission) = $allowed # allowed\n";
 		return $allowed;
 	}
 
