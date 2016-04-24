@@ -131,7 +131,7 @@ class Server {
 		}
 
 		header('Content-Type: plain/text; version=0.0.4');
-		die($body);
+		print ($body);
 	}
 
 	public function handlePutObjectACL() {
