@@ -46,4 +46,10 @@ class ACLs {
 		$acls->define('private', 0660, true);
 		return $acls;
 	}
+
+	public function getMetrics() {
+		return [
+			array('name' => 'acl_count', 'type'=>'gauge', 'value' => sizeof($this->acls) ),
+		];
+	}
 }

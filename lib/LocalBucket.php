@@ -152,4 +152,29 @@ class LocalBucket {
 	private function toBucketKey($diskPath) {
 		return substr($diskPath, strlen($this->path));
 	}
+
+	public function getMetrics() {
+		$this->listObjects("/", false, $allObjects, $_commonPrefixes);
+		usort($allObjects, function($a, $b) {
+			return $a['size'] - $b['size'];
+		});
+
+		$allObjectsSum = array_sum(array_map(function($o) { return $o['size']; }, $allObjects));
+
+		return [
+			# Bucket Stats
+			array('type' => 'summary', 'help' => 'Insight into the stored objects',
+			      'name' => 'object_size',  'tags'=>'quantile="0.5"',
+						'value' => $allObjects[(int)(sizeof($allObjects) * 0.5)]['size']),
+			array('name' => 'object_size', 'tags'=>'quantile="0.9"',
+					'value' => $allObjects[(int)(sizeof($allObjects) * 0.9)]['size']),
+			array('name' => 'object_size', 'tags'=>'quantile="0.99"',
+						'value' => $allObjects[(int)(sizeof($allObjects) * 0.99)]['size']),
+			array('name' => 'object_size', 'tags'=>'quantile="1"',
+						'value' => $allObjects[sizeof($allObjects) -1]['size']),
+
+			array('name' => 'object_size_count', 'value' => sizeof($allObjects) ),
+			array('name' => 'object_size_sum', 'value' => $allObjectsSum)
+		];
+	}
 }

@@ -39,9 +39,11 @@ class Server {
 				return ['GetObject', $this->path, 'handleGetObject'];
 			}
 		case "GET":
-			if ($this->path == "/" || $this->path == "")
+			if (isset($this->params['metrics'])) {
+				return ['FetchPrometheusMetrics', '*', 'handleFetchPrometheusMetrics'];
+			} else if ($this->path == "/" || $this->path == "") {
 				return ['ListObjects', empty($this->params['prefix']) ? '/' : $this->params['prefix'], 'handleListObjects'];
-			else {
+			} else {
 				$info = $this->bucket->getObjectInfo($this->path);
 				if ($this->acls->allowsUnauthorizedRead($info['acl'])) {
 					return ['GetPublicObject', $this->path, 'handleGetObject'];
@@ -95,6 +97,41 @@ class Server {
 			}
 			$this->sendError($e, $code);
 		}
+	}
+
+	public function handleFetchPrometheusMetrics() {
+		$metrics = array_merge(
+			$this->bucket->getMetrics(),
+			$this->accessManager->getMetrics(),
+			$this->keyManager->getMetrics(),
+			$this->acls->getMetrics()
+		);
+
+		# Render
+		$body = "";
+		$tags = "service=\"mfs\"";
+		foreach($metrics as $metric) {
+			if (isset($metric['help'])) {
+				$body .= "# HELP ${metric['name']} ${metric['help']}\n";
+			}
+			if (isset($metric['type'])) {
+				$body .= "# TYPE ${metric['name']} ${metric['type']}\n";
+			}
+			# should becomes
+			# "thisisthekey{these=are,the=tags} thisisthevalue\n"
+			$mtags = "";
+			if (isset($metric['tags'])) {
+					$mtags .= $metric['tags'];
+			}
+			if (!empty($mtags) && !empty($tags)) {
+				$mtags .= ",";
+			}
+			$mtags .= $tags;
+			$body .= $metric['name'] . '{' . $mtags . '} ' . $metric['value'] . "\n";
+		}
+
+		header('Content-Type: plain/text; version=0.0.4');
+		die($body);
 	}
 
 	public function handlePutObjectACL() {

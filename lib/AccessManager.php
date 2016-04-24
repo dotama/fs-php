@@ -139,4 +139,10 @@ class AccessManager {
 		}
 		return false;
 	}
+
+	public function getMetrics() {
+		return [
+			array('name' => 'policies_count', 'type'=>'gauge', 'value' => sizeof($this->policies) )
+		];
+	}
 }

@@ -27,4 +27,10 @@ class KeyManager {
 		}
 		return false;
 	}
+
+	public function getMetrics() {
+		return [
+			array('name' => 'key_count', 'type'=>'gauge', 'value' => sizeof($this->keys) )
+		];
+	}
 }
