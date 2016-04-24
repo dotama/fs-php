@@ -32,7 +32,7 @@ class Policy {
 	}
 	// @deprecated
 	public function forPrefix($prefix) {
-		return $this->forResource('msg:' . $prefix);
+		return $this->forResource('msg:' . $prefix . '*');
 	}
 
 	public function forUsername($text) {
@@ -109,7 +109,7 @@ class AccessManager {
 	 */
 	private static function matches($needle, $patterns) {
 		foreach($patterns as $pattern) {
-			$pattern = '/^' . str_replace('*', '.*', $pattern)  . '$/';
+			$pattern = ',^' . str_replace('*', '.*', $pattern)  . '$,';
 			$result = preg_match($pattern, $needle);
 			# print $pattern . " to {$needle}\n";
 			# print "> $result\n";
