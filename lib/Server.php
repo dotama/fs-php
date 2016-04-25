@@ -87,7 +87,7 @@ class Server {
 			# If errors occur, this is normally never reached. so we only publish success events.
 			$this->events->Publish(array(
 				'username' => $this->username,
-				'action' => $name,
+				'action' => 'mfs::' . $name,
 				'resource' => $this->resource
 			));
 		} catch (Exception $e) {

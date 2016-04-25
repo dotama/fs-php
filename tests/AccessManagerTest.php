@@ -30,7 +30,6 @@ class AccessManagerTest extends PHPUnit_Framework_TestCase {
     $this->assertFalse($accessManager->isGranted('/data/forbidden', 'zeisss', 'mfs::ReadObject'));
   }
 
-
   public function testPrefixWorks() {
     $am = $this->givenAccessManagerWithPrefixedPolicy();
     $this->assertTrue($am->isGranted('/data/blub', 'zeisss', 'mfs::PutObject'));

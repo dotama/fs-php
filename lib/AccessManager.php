@@ -111,8 +111,6 @@ class AccessManager {
 		foreach($patterns as $pattern) {
 			$pattern = ',^' . str_replace('*', '.*', $pattern)  . '$,';
 			$result = preg_match($pattern, $needle);
-			# print $pattern . " to {$needle}\n";
-			# print "> $result\n";
 			if (1 === $result) {
 				return true;
 			}
