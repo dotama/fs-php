@@ -23,7 +23,7 @@ class ACLs {
 	}
 
 	public function byName($name) {
-		return $this->acls[$name];
+		return isset($this->acls[$name]) ? $this->acls[$name] : null;
 	}
 
 	public function byMode($mode) {

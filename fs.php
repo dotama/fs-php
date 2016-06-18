@@ -37,7 +37,7 @@ function handleRequest() {
 
 	$host = $_SERVER['HTTP_HOST'];
 	$method = $_SERVER['REQUEST_METHOD'];
-	$path = $_SERVER['PATH_INFO'];
+	$path = isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : "";
 	$params = $_GET;
 	if (!function_exists('getallheaders')) {
 		$headers = array();

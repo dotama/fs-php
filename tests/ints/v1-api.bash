@@ -39,6 +39,8 @@ setUp() {
   #ENDPOINT="http://localhost:4900/fs.php"
   #php -S localhost:49000 &
   #FSPID=$!
+  test -z "$ENDPOINT" && echo 'Required: $ENDPOINT' && exit 1
+  test -z "$WITHAUTH" && echo 'Required: $WITHAUTH' && exit 1
   true
 }
 
@@ -49,8 +51,6 @@ tearDown() {
 }
 
 testHappyCase() {
-  test -z "$ENDPOINT" && echo 'Required: $ENDPOINT' && exit 1
-  test -z "$WITHAUTH" && echo 'Required: $WITHAUTH' && exit 1
 
   set -e
 

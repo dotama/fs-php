@@ -14,7 +14,7 @@ class LocalBucket {
 
 	public function listObjects($prefix, $showCommonPrefixes, &$outObjects, &$outCommonsPrefixes) {
 		$path = $this->toDiskPath($prefix);
-		$files = glob($path . '*', GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE);
+		$files = glob($path . '*', GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE);
 
 		#echo json_encode($files) . "\n"
 		foreach ($files as $file) {

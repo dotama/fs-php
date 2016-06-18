@@ -88,7 +88,7 @@ class Server {
 			$this->events->Publish(array(
 				'username' => $this->username,
 				'action' => 'mfs::' . $name,
-				'resource' => $this->resource
+				'resource' => $resource
 			));
 		} catch (Exception $e) {
 			$code = 500;
@@ -199,9 +199,8 @@ class Server {
 
 	public function handleGetObject() {
 		$info = $this->bucket->getObjectInfo($this->path);
-		$data = $this->bucket->getObject($this->path);
 
-		if ($data == NULL) {
+		if ($info == NULL) {
 			throw new Exception('Not found', 404);
 		}
 
@@ -214,6 +213,7 @@ class Server {
 		header('Content-Type: ' . $info['mime']);
 		header("HTTP/1.1 200 OK");
 		if ($this->method == "GET") {
+			$data = $this->bucket->getObject($this->path);
 			echo $data;
 		}
 	}
