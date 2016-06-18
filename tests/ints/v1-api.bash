@@ -41,6 +41,7 @@ setUp() {
   #FSPID=$!
   test -z "$ENDPOINT" && echo 'Required: $ENDPOINT' && exit 1
   test -z "$WITHAUTH" && echo 'Required: $WITHAUTH' && exit 1
+  echo "setUp done"
   true
 }
 
