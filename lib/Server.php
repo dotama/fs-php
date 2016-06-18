@@ -288,6 +288,9 @@ class Server {
 	}
 
 	private function checkAuthentication() {
+		if (empty($this->headers['authorization'])) {
+			return false;
+		}
 		$auth = $this->headers['authorization'];
 		$fields = explode(" ", $auth);
 
