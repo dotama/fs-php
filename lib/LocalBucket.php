@@ -33,7 +33,7 @@ class LocalBucket {
 
 	public function getObjectInfo($key) {
 		$diskPath = $this->toDiskPath($key);
-		if (!file_exists($diskPath)) {
+		if (!is_file($diskPath)) {
 			return NULL;
 		}
 		$stat = stat($diskPath);
