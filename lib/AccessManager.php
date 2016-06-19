@@ -32,7 +32,7 @@ class Policy {
 	}
 	// @deprecated
 	public function forPrefix($prefix) {
-		return $this->forResource('msg:' . $prefix . '*');
+		return $this->forResource('mfs:' . $prefix . '*');
 	}
 
 	public function forUsername($text) {
@@ -65,7 +65,7 @@ class AccessManager {
 	}
 
 	public function isGranted($prefix, $username, $permission) {
-		$resource = 'msg:' . $prefix;
+		$resource = 'mfs:' . $prefix;
 		$allowed = false;
 		// Logic is as follows:
 		// * If a policy has usernames, one must match
