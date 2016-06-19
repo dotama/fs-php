@@ -46,7 +46,35 @@ which allows the basic configuration. The following objects and variables can be
 
 ## Policies
 
-The `$accessManager` allows a more fine grained configuration of users to objects.
+
+fs-php has a policy concept to support fine grained control over the actions each
+user can perform. Policy objects can grant or deny rights based on user,
+resource and action.
+
+Upon a request at least one policy must be found that grants access. If none
+matches, the request is denied. If one deny-policy matches, the request is
+aborted immediately.
+
+Call `$accessManager->newPolicy()` to obtain a new policy.
+
+* `deny()` modifies the effect of the policy to deny the request immediately. By
+  default a policy grants access.
+* `forUsername(string)` specifies the username that must be provided by the
+  authenticator.
+* `forResource(string)` specifies the URI of the resource. Resource in fs-php are
+  specified as `mfs:PATH`, where `PATH` is the prefix that is operated upon.
+* `forPrefix(string)` is an alias for `forResource()` that prefixes the argument
+  with `mfs:`.
+* `forUsername(string)` specifies the username that should be matched upon.
+* `permission(string)` specifies the action that this policy matches on.
+* `description(string)` allows to provide a description for the administrator.
+* `id(string)` specifies an identifier for the policy object.
+
+The string parameter for matching support wildcards and grouping.
+
+ * `forUsername('(adam|bob|eve)')` match all three usernames.
+ * `forUsername('z*')` match all users starting with a `z`.
+
 
 ### Permissions
 
