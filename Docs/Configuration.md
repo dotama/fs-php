@@ -16,6 +16,8 @@ which allows the basic configuration. The following objects and variables can be
  * `$keyManager`
 
     The KeyManager manages the auth tokens that can be used to authenticate with the API.
+    It is the store for the `BasicAuthenticator` that gets installed by default.
+    This behavior can be disabled by setting `$keyManager` to `null`.
 
     Use `$keyManager->addBcryptCredentials($name, $hash)` to add a bcrypt hashed password.
     Use `$keyManager->addKey($name, $password)` to add a plain text password. Not recommended!
@@ -43,6 +45,13 @@ which allows the basic configuration. The following objects and variables can be
       ->deny()->forPrefix("/configs/")
       ->permission('mfs::(Delete|Put)*');
     ```
+
+* `$authenticators`
+
+  An array of `RequestAuthenticator` objects. `$keyManager` will be added to it,
+  after the config file has been included.
+
+  `RequestAuthenticator` is described in the `lib/KeyManager.php` file.
 
 ## Policies
 
@@ -86,10 +95,42 @@ Each operations equals on permissions that is expected to be granted by a policy
  * `mfs::PutObjectACL`
  * `mfs::DeleteObject`
 
+## Provided RequestAuthenticator
+
+fs-php comes with the following implementations of `RequestAuthenticator`:
+
+ * BasicAuthenticator
+ * JWTAndSessionAuthenticator
+
+The `BasicAuthenticator` takes a username/password via htbasic and compares it to
+a bcrypted list of passwords. This can be configured through the `$keyManager`
+variable as explained above.
+
+### JWT
+
+The `JWTAndSessionAuthenticator` is an authenticator that starts a new PHP session
+upon seeing a valid JWT token. The `sub` claim is taken as the username of the client.
+
+To active, register it as an authenticator. The second and third parameter are optional.
+
+> $authenticators[] = new JWTAndSessionAuthenticator(
+>   "secret-key"
+>   # , "bearer"        # authentication header scope to look for
+>   # , array('HS256')  # algorithms to accept for signature
+> );
+
+Clients must support cookies as described in [RFC
+6265](https://tools.ietf.org/html/rfc6265).
+
+This allows an external service to act as an authorization service. The client or
+enduser authenticates with that service, which issues a JWT token that can be
+used with fs-php to start a session. The token can be short-lived and run on any
+server. They only need to share a secret key.
+
 ## Known Problems
 
-Previouslys on my hoster, PUTing a file with endings like `.txt` or `.gif` returned an early `Method Not Allowed` from the
-NGinx server.
+Previouslys on my hoster, PUTing a file with endings like `.txt` or `.gif`
+returned an early `Method Not Allowed` from the Nginx server.
 
-If pushing binary files with `curl`, set the `Content-Type` header to something binary. Otherwise the server tries to
-parse the request and throws an error.
+If pushing binary files with `curl`, set the `Content-Type` header to something
+binary. Otherwise the server tries to parse the request and throws an error.

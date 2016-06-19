@@ -1,6 +1,8 @@
 <?php
 
 # general authnz
+require_once(__DIR__ . '/RequestAuthenticator.php');
+require_once(__DIR__ . '/JWTAndSessionAuthenticator.php');
 require_once(__DIR__ . '/AccessManager.php');
 require_once(__DIR__ . '/KeyManager.php');
 

@@ -2,11 +2,13 @@
 ini_set('track_errors', 1);
 
 require_once(__DIR__ . '/lib/autoload.php');
+require_once(__DIR__ . '/vendor/autoload.php');
 
 function config() {
 	$accessManager = new AccessManager();
 	$keyManager = new KeyManager();
 	$events = new MessagingService();
+	$authenticators = [];
 
 	# Load config file
 	@include_once(__DIR__ . '/fs.config.php');
@@ -15,6 +17,10 @@ function config() {
 		die('$bucketPath must be configured in fs.config.php - empty');
 	}
 
+	# $keyManager is allowed to be reset by the config.
+	if ($keyManager != null) {
+		$authenticators[] = new BasicAuthenticator($keyManager);
+	}
 	$acls = ACLs::defaultACLs();
 
 	global $DOC;
@@ -29,7 +35,7 @@ function config() {
 			require($bucket->toDiskPath($path));
 		}
 	}
-	return [$keyManager, $bucket, $acls, $accessManager, $events];
+	return [$authenticators, $bucket, $acls, $accessManager, $events];
 }
 
 function handleRequest() {

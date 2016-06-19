@@ -2,7 +2,7 @@
 
 class Server {
 	private $bucket;
-	private $keyManager;
+	private $authenticators;
 	private $acls;
 	private $accessManager;
 	private $events;
@@ -14,9 +14,9 @@ class Server {
 	private $path;
 	private $username;
 
-	public function Server($bucket, $keyManager, $acls, $accessManager, $events) {
+	public function Server($bucket, $authenticators, $acls, $accessManager, $events) {
 		$this->bucket = $bucket;
-		$this->keyManager = $keyManager;
+		$this->authenticators = $authenticators;
 		$this->acls = $acls;
 		$this->accessManager = $accessManager;
 		$this->events = $events;
@@ -288,29 +288,17 @@ class Server {
 	}
 
 	private function checkAuthentication() {
-		if (empty($this->headers['authorization'])) {
-			return false;
+		foreach($this->authenticators as $authenticator) {
+			$userid = $authenticator->authenticate($this->path, $this->params, $this->headers);
+			if ($userid !== null) {
+				if (!is_string($userid)) {
+					header("HTTP/1.1 500 Internal Server Errror");
+					die('Invalid authenticator result.');
+				}
+				$this->username = $userid;
+				return true;
+			}
 		}
-		$auth = $this->headers['authorization'];
-		$fields = explode(" ", $auth);
-
-		if (sizeof($fields) != 2) {
-			return false;
-		}
-		if ($fields[0] != "Basic") {
-			return false;
-		}
-
-		$credentials = explode(":", base64_decode($fields[1]));
-		if (sizeof($credentials) != 2) {
-			return false;
-		}
-
-		if ($this->keyManager->validCredentials($credentials[0], $credentials[1])) {
-			$this->username = $credentials[0];
-			return true;
-		}
-
 		return false;
 	}
 }

@@ -6,7 +6,6 @@ build:
             name: Validate PHP files
             code: |
               find . -name '*.php' | xargs -I{} php -l {}
-
         - install-packages:
             packages: git unzip jq
         - mbrevda/composer-install@1.0.1

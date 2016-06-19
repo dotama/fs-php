@@ -1,5 +1,37 @@
 <?php
 
+class BasicAuthenticator implements RequestAuthenticator {
+	private $keyManager;
+	public function BasicAuthenticator($keyManager) {
+		$this->keyManager = $keyManager;
+	}
+	public function authenticate($_url, $_query, $headers) {
+		if (empty($headers['authorization'])) {
+			return null;
+		}
+		$auth = $headers['authorization'];
+		$fields = explode(" ", $auth);
+
+		if (sizeof($fields) != 2) {
+			return null;
+		}
+		if ($fields[0] != "Basic") {
+			return null;
+		}
+
+		$credentials = explode(":", base64_decode($fields[1]));
+		if (sizeof($credentials) != 2) {
+			return null;
+		}
+
+		if ($this->keyManager->validCredentials($credentials[0], $credentials[1])) {
+			return $credentials[0];
+		}
+
+		return null;
+	}
+}
+
 class KeyManager {
 	private $keys;
 
