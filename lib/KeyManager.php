@@ -1,6 +1,6 @@
 <?php
 
-class BasicAuthenticator implements RequestAuthenticator {
+class BasicAuthenticator implements RequestAuthenticator, MetricsProvider {
 	private $keyManager;
 	public function BasicAuthenticator($keyManager) {
 		$this->keyManager = $keyManager;
@@ -29,6 +29,10 @@ class BasicAuthenticator implements RequestAuthenticator {
 		}
 
 		return null;
+	}
+
+	public function getMetrics() {
+		return $this->keyManager instanceof MetricsProvider ? $this->keyManager->getMetrics() : [];
 	}
 }
 
