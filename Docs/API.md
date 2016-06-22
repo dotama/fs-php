@@ -13,7 +13,7 @@ reading/writing. `fs.bash` appends this automatically to all routes.
 
 ## Authentication
 
-Authentication is managed via http basic auth. See `Configuration` for more details.
+Authentication can happen over Basic Auth or using JWT as a bearer token and cookies. See `Configuration` for more details.
 
 ## Operations
 ### Listing objects
@@ -49,6 +49,8 @@ $ curl \$baseurl/api.md
 A `404 Not Found` will be returned, if the given key does not exist. Otherwise a `200 OK`. If the file has the `public-read`
 acl, no authorization is required.
 
+A header `x-acl` contains the ACL of the object.
+
 PS: `HEAD` is also supported.
 
 ### Create an Object
@@ -73,3 +75,13 @@ $ curl \$baseurl/demo.md -XDELETE
 ```
 
 The server responds with a `204 No Content` if the delete was successful. If no such key exists, a `404 Not Found` is returned.
+
+### Updating an Objects ACL
+
+You can change the ACL of an object after its creating.
+
+```
+$ curl \$baseurl/demo.md?acl -XPUT -d'public-read'
+```
+
+The servers responds with a `204 No Content`.
