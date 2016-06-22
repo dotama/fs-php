@@ -11,3 +11,4 @@ class StaticKeyManager {
 $keyManager = new StaticKeyManager();
 
 $accessManager->newPolicy()->forPrefix('/')->forUsername('test')->permission('*');
+$accessManager->newPolicy()->forPrefix('*')->forUsername('test')->permission('mfs::FetchPrometheusMetrics');
