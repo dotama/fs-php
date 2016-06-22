@@ -16,7 +16,7 @@ class Server {
 
 	public function Server($bucket, $authenticators, $acls, $accessManager, $events) {
 		$this->bucket = $bucket;
-		$this->authenticators = $authenticators;
+		$this->authenticators = new RequestAuthenticatorSet($authenticators);
 		$this->acls = $acls;
 		$this->accessManager = $accessManager;
 		$this->events = $events;
@@ -103,8 +103,8 @@ class Server {
 		$metrics = array_merge(
 			$this->bucket->getMetrics(),
 			$this->accessManager->getMetrics(),
-			$this->keyManager->getMetrics(),
-			$this->acls->getMetrics()
+			$this->acls->getMetrics(),
+			$this->authenticators->getMetrics()
 		);
 
 		# Render
@@ -288,16 +288,10 @@ class Server {
 	}
 
 	private function checkAuthentication() {
-		foreach($this->authenticators as $authenticator) {
-			$userid = $authenticator->authenticate($this->path, $this->params, $this->headers);
-			if ($userid !== null) {
-				if (!is_string($userid)) {
-					header("HTTP/1.1 500 Internal Server Errror");
-					die('Invalid authenticator result.');
-				}
-				$this->username = $userid;
-				return true;
-			}
+		$userid = $this->authenticators->authenticate($this->path, $this->params, $this->headers);
+		if ($userid !== null) {
+			$this->username = $userid;
+			return true;
 		}
 		return false;
 	}

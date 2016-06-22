@@ -7,6 +7,12 @@ assertEquals() {
   test "$expected" = "$value" || (echo "Expected '$expected', got '$value'" && exit 1)
 }
 
+assertOutputContains() {
+  local text=$1
+
+  grep -q "${text}" ./output || (echo "Expected ./output to contain '${text}'" && exit 1)
+}
+
 assertEqualsFile() {
   local expected=$1
   local file=$2
@@ -21,7 +27,6 @@ assertJSONContains() {
 
   jq -r "$path" < "$file" | fgrep "$match" >/dev/null || (echo "Expected $file to contain '$match' for path '$path'." && exit 1)
 }
-
 
 assertJSONNotContains() {
   local file=$1
@@ -52,7 +57,6 @@ tearDown() {
 }
 
 testHappyCase() {
-
   set -e
 
   # ListObjects fail w/o AUTH Headers
@@ -210,6 +214,19 @@ testCreateWithACL() {
   assertEquals "200" "${result}"
   assertJSONContains "./output" '.objects[0].key' '/somefile'
   assertJSONContains "./output" '.objects[0].acl' 'public-read'
+  echo -n "."
+
+  echo
+}
+
+testPrometheusMetrics() {
+  result=$(curl $WITHAUTH $ENDPOINT?metrics $OPTS)
+  assertEquals "200" "${result}"
+
+
+  assertOutputContains "^authn_authenticators_count"
+  assertOutputContains "^authz_policies_count"
+  echo -n "."
 
   echo
 }
@@ -217,5 +234,6 @@ testCreateWithACL() {
 setUp
 testHappyCase
 testCreateWithACL
+testPrometheusMetrics
 tearDown
 echo "ok"

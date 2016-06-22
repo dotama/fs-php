@@ -1,5 +1,9 @@
 <?php
 
+interface MetricsProvider {
+	public function getMetrics();
+}
+
 # general authnz
 require_once(__DIR__ . '/RequestAuthenticator.php');
 require_once(__DIR__ . '/JWTAndSessionAuthenticator.php');

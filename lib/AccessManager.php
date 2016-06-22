@@ -120,7 +120,7 @@ class AccessManager {
 
 	public function getMetrics() {
 		return [
-			array('name' => 'auth_policies_count', 'type'=>'gauge', 'value' => sizeof($this->policies) )
+			array('name' => 'authz_policies_count', 'type'=>'gauge', 'value' => sizeof($this->policies) )
 		];
 	}
 }
