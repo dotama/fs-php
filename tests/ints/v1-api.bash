@@ -52,7 +52,6 @@ tearDown() {
 }
 
 testHappyCase() {
-
   set -e
 
   # ListObjects fail w/o AUTH Headers

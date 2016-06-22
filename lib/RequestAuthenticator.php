@@ -24,14 +24,14 @@ class RequestAuthenticatorSet {
 		foreach ($this->set as $authenticator) {
 			$userid = $authenticator->authenticate($path, $params, $headers);
 			if ($userid != null) {
-				if (!is_string($userid)) {
+				if (!is_string($userid) || empty($userid)) {
 					header("HTTP/1.1 500 Internal Server Errror");
 					die('{"message": "Invalid authenticator result."}');
 				}
 				return $userid;
 			}
 		}
-		return false;
+		return null;
 	}
 
 	public function getMetrics() {
