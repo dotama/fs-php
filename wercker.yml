@@ -78,3 +78,5 @@ deploy:
     after-steps:
       - wercker/slack-notifier@1.2.1:
           url: $DEPLOY_SLACK_URL
+      - akelmanson/rollbar-notify:
+          access_token: $ROLLBAR_ACCESS_TOKEN
