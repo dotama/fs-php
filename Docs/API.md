@@ -61,7 +61,7 @@ Simply use `PUT` with the desired key and provide the content in the body.
 $ curl \$baseurl/demo.md -XPUT -d 'This is the new content'
 ```
 
-The server responds with a `204 No Content` if the upload was successful.
+The server responds with a `201 Created` if the upload was successful.
 
 You can specify a `x-acl` header field, which can be either `private` or `public-read`. `private` is the default.
 When set to `public-read`, _reading_ this file does not require authentication. This is mapped to file permissions.

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 assertEquals() {
   local expected=$1
   local value=$2
@@ -232,24 +234,33 @@ testPrometheusMetrics() {
 }
 
 testSnaplinks() {
-  test ! -f ./somefile
-  test ! -f ./otherfile
+  rm -f ./somefile
+  rm -f ./otherfile
 
   # create basic file
-  result=$(curl -XPUT -d 'original content' $WITHAUTH $ENDPOINT/somefile $OPTS)
-  assertEquals "204" "${result}"
+  local result=$(curl $OPTS -XPUT -d 'original content' $WITHAUTH "$ENDPOINT/somefile")
+  assertEquals "201" "${result}"
+  echo -n "."
 
   # create snaplink from /somefile
-  result=$(curl -XPUT $WITHAUTH $ENDPOINT/otherfile?link $OPTS -H'Location: /somefile')
-
+  result=$(curl ${OPTS} -XPUT $WITHAUTH $ENDPOINT/otherfile?link  -H'Location: /somefile')
   # Verify both files are equal
+  assertEquals "201" "${result}"
   test -f ./otherfile
-  assertEquals "204" "${result}"
   assertEqualsFile ./somefile ./otherfile
+  echo -n "."
+
+  # verify file is readable via API
+  result=$(curl ${OPTS} $WITHAUTH $ENDPOINT/otherfile)
+  assertEquals "200" "${result}"
+  assertEqualsFile ./somefile ./output
 
   # overwrite original file
   result=$(curl -XPUT -d 'new content' $WITHAUTH $ENDPOINT/somefile $OPTS)
-  assertEquals "200" "${result}"
+  assertEquals "201" "${result}"
+  echo -n "."
+
+  echo
 }
 
 setUp
