@@ -54,6 +54,8 @@ class Server {
 		case "PUT":
 			if (isset($this->params['acl'])) {
 				return ['PutObjectACL', $this->path, 'handlePutObjectACL'];
+			} else if (isset($this->params['link'])) {
+				return ['PutSnapLink', $this->path, 'handlePutSnapLink'];
 			} else {
 				return ['PutObject', $this->path, 'handlePutObject'];
 			}
@@ -193,6 +195,18 @@ class Server {
 
 		$data = file_get_contents('php://input');
 		$this->bucket->putObject($this->path, $data, $acl);
+
+		header("HTTP/1.1 201 Created");
+	}
+
+	public function handlePutSnapLink() {
+		$path = $this->path;
+		$location = $this->headers['location'];
+		if (empty($location)) {
+			return $this->sendError(new Exception('location header MUST be provided', 400));
+		}
+
+		$this->bucket->createSnapLink($path, $location);
 
 		header("HTTP/1.1 201 Created");
 	}

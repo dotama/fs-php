@@ -66,6 +66,20 @@ The server responds with a `201 Created` if the upload was successful.
 You can specify a `x-acl` header field, which can be either `private` or `public-read`. `private` is the default.
 When set to `public-read`, _reading_ this file does not require authentication. This is mapped to file permissions.
 
+### Creating a SnapLink
+
+You can also create a snaplink to an object by adding the parameter `link` and specifiying the location
+of the object to link to via the `Location` header. This creates a linked version of the object, which 
+snaps when the original object gets updated.
+
+This is inspired by [Mantas Snaplinks](https://apidocs.joyent.com/manta/api.html#PutSnapLink).
+
+```
+$ curl -XPUT \$baseurl/latest/demo?link -H'Location: /demo.md'
+```
+
+On success, an empty `201 Created` is returned.
+
 ### Deleting an Object
 
 Use `DELETE` to delete an undesired object.

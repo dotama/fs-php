@@ -244,7 +244,6 @@ testSnaplinks() {
 
   # create snaplink from /somefile
   result=$(curl ${OPTS} -XPUT $WITHAUTH $ENDPOINT/otherfile?link  -H'Location: /somefile')
-  # Verify both files are equal
   assertEquals "201" "${result}"
   test -f ./otherfile
   assertEqualsFile ./somefile ./otherfile
@@ -254,10 +253,16 @@ testSnaplinks() {
   result=$(curl ${OPTS} $WITHAUTH $ENDPOINT/otherfile)
   assertEquals "200" "${result}"
   assertEqualsFile ./somefile ./output
+  echo -n "."
 
   # overwrite original file
   result=$(curl -XPUT -d 'new content' $WITHAUTH $ENDPOINT/somefile $OPTS)
   assertEquals "201" "${result}"
+  echo -n "."
+
+  result=$(curl ${OPTS} $WITHAUTH $ENDPOINT/otherfile)
+  assertEquals "200" "${result}"
+  assertEquals "original content" "$(cat ./output)"
   echo -n "."
 
   echo

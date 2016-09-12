@@ -53,6 +53,19 @@ class LocalBucket {
 		);
 	}
 
+	public function createSnapLink($key, $src) {
+		$file = $this->toDiskPath($key);
+
+		if (file_exists($file)) {
+			throw new Exception('Key already exists.');
+		}
+		$success = link($this->toDiskPath($src), $file);
+
+		if (!$success) {
+			throw new Exception('Failed to create link');
+		}
+	}
+
 	public function putObject($key, $data, $aclName = NULL) {
 		$diskPath = $this->toDiskPath($key);
 
