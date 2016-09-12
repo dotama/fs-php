@@ -231,9 +231,31 @@ testPrometheusMetrics() {
   echo
 }
 
+testSnaplinks() {
+  test ! -f ./somefile
+  test ! -f ./otherfile
+
+  # create basic file
+  result=$(curl -XPUT -d 'original content' $WITHAUTH $ENDPOINT/somefile $OPTS)
+  assertEquals "204" "${result}"
+
+  # create snaplink from /somefile
+  result=$(curl -XPUT $WITHAUTH $ENDPOINT/otherfile?link $OPTS -H'Location: /somefile')
+
+  # Verify both files are equal
+  test -f ./otherfile
+  assertEquals "204" "${result}"
+  assertEqualsFile ./somefile ./otherfile
+
+  # overwrite original file
+  result=$(curl -XPUT -d 'new content' $WITHAUTH $ENDPOINT/somefile $OPTS)
+  assertEquals "200" "${result}"
+}
+
 setUp
 testHappyCase
 testCreateWithACL
 testPrometheusMetrics
+testSnaplinks
 tearDown
 echo "ok"
