@@ -6,6 +6,7 @@
       <file>tests/PolicyTest.php</file>
       <file>tests/AccessManagerTest.php</file>
       <file>tests/KeyManagerTest.php</file>
+      <file>tests/LocalBucketTest.php</file>
     </testsuite>
   </testsuites>
 </phpunit>
