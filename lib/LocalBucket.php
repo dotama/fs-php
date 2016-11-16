@@ -3,7 +3,7 @@
 class LocalBucket {
 	private $path;
 	private $acls;
-	public function LocalBucket($acls, $path) {
+	public function __construct($acls, $path) {
 		$this->path = $path;
 		$this->acls = $acls;
 

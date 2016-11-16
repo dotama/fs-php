@@ -7,7 +7,7 @@ class JWTAndSessionAuthenticator implements RequestAuthenticator {
   private $scope;
   private $algs;
 
-  function JWTAndSessionAuthenticator($secret_key, $scope = 'bearer', $algs = array('HS256')) {
+  function __construct($secret_key, $scope = 'bearer', $algs = array('HS256')) {
     $this->secret = $secret_key;
     $this->scope = $scope;
     $this->algs = $algs;

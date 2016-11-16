@@ -3,7 +3,7 @@
 class ACLs {
 	private $acls;
 	private $default;
-	public function ACLs() {
+	public function __construct() {
 		$this->acls = array();
 	}
 

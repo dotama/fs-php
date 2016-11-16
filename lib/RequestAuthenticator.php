@@ -15,7 +15,7 @@ interface RequestAuthenticator {
 
 class RequestAuthenticatorSet {
 	private $set;
-	public function RequestAuthenticatorSet($set = []) {
+	public function __construct($set = []) {
 		$this->set = $set;
 	}
 

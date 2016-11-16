@@ -1,5 +1,6 @@
 <?php
 ini_set('track_errors', 1);
+date_default_timezone_set('UTC');
 
 require_once(__DIR__ . '/lib/autoload.php');
 require_once(__DIR__ . '/vendor/autoload.php');

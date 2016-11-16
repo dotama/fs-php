@@ -2,7 +2,7 @@
 
 class BasicAuthenticator implements RequestAuthenticator, MetricsProvider {
 	private $keyManager;
-	public function BasicAuthenticator($keyManager) {
+	public function __construct($keyManager) {
 		$this->keyManager = $keyManager;
 	}
 	public function authenticate($_url, $_query, $headers) {
@@ -39,7 +39,7 @@ class BasicAuthenticator implements RequestAuthenticator, MetricsProvider {
 class KeyManager {
 	private $keys;
 
-	public function KeyManager() {
+	public function __construct() {
 		$this->keys = array();
 	}
 

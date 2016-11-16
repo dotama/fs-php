@@ -54,7 +54,7 @@ class Policy {
 class AccessManager {
 	private $policies;
 
-	public function AccessManager() {
+	public function __construct() {
 		$this->policies = array();
 	}
 

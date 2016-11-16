@@ -14,7 +14,7 @@ class Server {
 	private $path;
 	private $username;
 
-	public function Server($bucket, $authenticators, $acls, $accessManager, $events) {
+	public function __construct($bucket, $authenticators, $acls, $accessManager, $events) {
 		$this->bucket = $bucket;
 		$this->authenticators = new RequestAuthenticatorSet($authenticators);
 		$this->acls = $acls;
