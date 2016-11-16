@@ -1,5 +1,48 @@
 <?php
 
+class ConditionEvaluator {
+	private $types;
+
+	public function __construct($types = null) {
+		if ($types == NULL) {
+			$types = array(
+				'StringLike' => new StringLikeCondition(),
+				'DateGreaterThan' => new DateGreaterThanCondition(),
+				'DateLessThan' => new DateLessThanCondition(),
+				'Bool' => new BoolCondition(),
+				'StringEquals' => new StringEqualsCondition(),
+			);	
+		}
+		
+		$this->types = $types;
+	}
+
+	// evaluate returns true, if all conditions are satisfied by the given $context and $username.
+	//
+	// $conditions = [condition()]
+	// condition = {type(), ...}
+	public function evaluate($context, $conditions) {
+		foreach ($conditions as $name => $objects) {
+			$condition = $this->types[$name];
+
+			foreach($objects as $field => $rhs) {
+				if (!isset($context[$field])) {
+					return false;
+				}
+				$f = $condition->fulfills($context[$field], $rhs);
+				if (!$f) {
+					return FALSE;
+				}
+			}
+
+
+		}
+		return TRUE;
+	}
+}
+
+
+
 class Policy {
 	const EFFECT_ALLOW = 'allow';
 	const EFFECT_DENY = 'deny';
@@ -8,6 +51,8 @@ class Policy {
 	private $description;
 	public $usernames;
 	public $resources;
+
+	public $conditions = [];
 
 	public $effect = Policy::EFFECT_ALLOW;
 	public $permissions = array();
@@ -49,13 +94,31 @@ class Policy {
 		$this->permissions[] = $permission;
 		return $this;
 	}
+
+	public function mustMatch($conditions) {
+		foreach ($conditions as $cType => $cFields) {
+			if (isset($this->conditions[$cType])) {
+				foreach($cFields as $name => $expectedValue) {
+					$this->conditions[$cType][$name] = $expectedValue;
+				}
+			} else {
+				$this->conditions[$cType] = $cFields;
+			}
+		}
+	}
 }
 
 class AccessManager {
+	const CTX_USERNAME = 'authn::username';
+	const CTX_CURRENTTIME = 'sys::CurrentTime';
+	const CTX_REQUEST_IP = 'req::ip';
+
 	private $policies;
+	private $conditions;
 
 	public function __construct() {
 		$this->policies = array();
+		$this->conditions = new ConditionEvaluator();
 	}
 
 	public function newPolicy() {
@@ -64,9 +127,20 @@ class AccessManager {
 		return $policy;
 	}
 
+	// isGranted returns true if the given $username has allowance to perform
+	// $permission onto $prefix.
 	public function isGranted($prefix, $username, $permission) {
 		$resource = 'mfs:' . $prefix;
 		$allowed = false;
+
+		$context = [
+			'mfs::resource' => $resource,
+			'mfs::permission' => $permission,
+
+			AccessManager::CTX_USERNAME => $username,
+			AccessManager::CTX_CURRENTTIME => date("c"),
+		];
+
 		// Logic is as follows:
 		// * If a policy has usernames, one must match
 		// * If a policy has a prefix, one must match
@@ -95,8 +169,15 @@ class AccessManager {
 				continue;
 			}
 
+			if (sizeof($policy->conditions) > 0) {
+				if (!$this->conditions->evaluate($context, $policy->conditions)) {
+					continue;
+				}
+			}
+
 			// Apply result
 			if (!$policy->hasAccess()) {
+				# a deny rule aborts evaulation immediately
 				return false;
 			}
 			$allowed = true;

@@ -1,5 +1,6 @@
 <?php
 
+
 class AccessManagerTest extends PHPUnit_Framework_TestCase {
   public function givenAccessManagerWithReadOnlyPolicy() {
     $accessManager = new AccessManager();
@@ -17,6 +18,24 @@ class AccessManagerTest extends PHPUnit_Framework_TestCase {
       ->forPrefix('/data')
       ->permission('mfs::*');
     return $accessManager;
+  }
+
+  public function givenAccessManagerWithConditionedPolicy() {
+    $accessManager = new AccessManager();
+    $accessManager->newPolicy()
+      ->forUsername('zeisss')
+      ->forPrefix('/data')
+      ->permission('mfs::*')
+      ->mustMatch([
+        # kind of a duplicate to forUsername(), but good for testing here
+        'StringEquals' => [AccessManager::CTX_USERNAME => 'zeisss'],
+      ]);
+    return $accessManager; 
+  }
+
+  public function testConditions() {
+    $accessManager = $this->givenAccessManagerWithConditionedPolicy();
+    $this->assertTrue($accessManager->isGranted('/data/secret', 'zeisss', 'mfs::ReadObject'));
   }
 
   public function testDenyPolicyHavePrecedense() {
