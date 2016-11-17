@@ -17,10 +17,32 @@ class ConditionEvaluator {
 		$this->types = $types;
 	}
 
+	// resolve replaces all occurences of '${varname}' with the value of the key 'varname'
+	// in $vars.
+	function resolve($input, $vars) {
+		while (true) {
+			$begin = mb_strpos($input, '${');
+			if ($begin === FALSE) {
+				return $input;
+			}
+
+			$end = mb_strpos($input, '}', $begin);	
+			if ($end === FALSE) {
+				trigger_error("Failed to find end of var token '}' after position $begin for '$input'.");
+				return NULL;
+			}
+
+			$key = substr($input, $begin+2, $end - $begin - 2);
+			$input = substr_replace(
+				$input, 
+				$vars[$key],
+				$begin, $end - $begin + 1
+			);
+		}		
+	}
+
 	// evaluate returns true, if all conditions are satisfied by the given $context and $username.
 	//
-	// $conditions = [condition()]
-	// condition = {type(), ...}
 	public function evaluate($context, $conditions) {
 		foreach ($conditions as $name => $objects) {
 			$condition = $this->types[$name];
@@ -28,6 +50,14 @@ class ConditionEvaluator {
 			foreach($objects as $field => $rhs) {
 				if (!isset($context[$field])) {
 					return false;
+				}
+
+				if (is_string($rhs)) {
+					$rhs = $this->resolve($rhs, $context);
+				} else if (is_array($rhs)) {
+					$rhs = array_map(function($v) use ($context) {
+						return $this->resolve($v, $context);
+					}, $rhs);
 				}
 				$f = $condition->fulfills($context[$field], $rhs);
 				if (!$f) {

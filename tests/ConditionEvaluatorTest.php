@@ -15,6 +15,21 @@ class ConditionEvaluatorTest extends PHPUnit_Framework_TestCase {
     $this->assertFalse($result);
   }
 
+  public function testResolve() {
+    $e = new ConditionEvaluator();
+    $this->assertEquals('abc', $e->resolve('a${b}c', ['b' => 'b']));
+    $this->assertEquals('abbc', $e->resolve('a${b}${b}c', ['b' => 'b']));
+    $this->assertEquals('abc', $e->resolve('${ab}${b}', ['ab' => 'ab', 'b' => 'c']));
+  }
+
+  public function testVariableReplacement() {
+    $context = [
+        'a' => 'a',
+        'b' => 'a',
+    ];
+    $this->assertEvaluates($context, ["StringEquals" => ["a" => '${b}']]);
+  }
+
   public function testStringEquals() {
     $context = ['u' => 'abc'];
     $this->assertEvaluates($context, ["StringEquals" => ['u' => 'abc']]);
@@ -63,10 +78,9 @@ class ConditionEvaluatorTest extends PHPUnit_Framework_TestCase {
     $context = ['authz::mfa' => true];
     $this->assertEvaluates($context, ["Bool" => ['authz::mfa' => true]]);
     $this->assertNotEvaluates($context, ["Bool" => ['authz::mfa' => false]]);
-  }
 
-  # If "Bool" is used with a non-bool, it always evaluates to false.
-  public function testBoolConditionWrongType() {
+
+    # If "Bool" is used with a non-bool, it always evaluates to false.
     $context = ['authz::mfa' => 'yes'];
     $this->assertNotEvaluates($context, ["Bool" => ['authz::mfa' => true]]);
     $this->assertNotEvaluates($context, ["Bool" => ['authz::mfa' => false]]); 
