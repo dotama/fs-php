@@ -35,7 +35,7 @@ class AccessManagerTest extends PHPUnit_Framework_TestCase {
 
   public function testConditions() {
     $accessManager = $this->givenAccessManagerWithConditionedPolicy();
-    $this->assertTrue($accessManager->isGranted('/data/secret', 'zeisss', 'mfs::ReadObject'));
+    $this->assertfalse($accessManager->isGranted('/data/secret', 'zeisss', 'mfs::ReadObject'));
   }
 
   public function testDenyPolicyHavePrecedense() {
