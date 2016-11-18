@@ -6,6 +6,7 @@ class Server {
 	private $acls;
 	private $accessManager;
 	private $events;
+	private $errorHandler;
 
 	private $headers;
 	private $params;
@@ -96,6 +97,9 @@ class Server {
 				$code = $e->getCode();
 			}
 			$this->sendError($e, $code);
+			if (!empty($this->errorHandler)) {
+				$this->errorHandler->notify($e);
+			}
 		}
 	}
 
