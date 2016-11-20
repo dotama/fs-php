@@ -11,9 +11,8 @@ class ConditionEvaluator {
 				'DateLessThan' => new DateLessThanCondition(),
 				'Bool' => new BoolCondition(),
 				'StringEquals' => new StringEqualsCondition(),
-			);	
+			);
 		}
-		
 		$this->types = $types;
 	}
 
@@ -26,7 +25,7 @@ class ConditionEvaluator {
 				return $input;
 			}
 
-			$end = mb_strpos($input, '}', $begin);	
+			$end = mb_strpos($input, '}', $begin);
 			if ($end === FALSE) {
 				trigger_error("Failed to find end of var token '}' after position $begin for '$input'.");
 				return NULL;
@@ -34,11 +33,11 @@ class ConditionEvaluator {
 
 			$key = substr($input, $begin+2, $end - $begin - 2);
 			$input = substr_replace(
-				$input, 
+				$input,
 				$vars[$key],
 				$begin, $end - $begin + 1
 			);
-		}		
+		}
 	}
 
 	// evaluate returns true, if all conditions are satisfied by the given $context and $username.
@@ -64,8 +63,6 @@ class ConditionEvaluator {
 					return FALSE;
 				}
 			}
-
-
 		}
 		return TRUE;
 	}

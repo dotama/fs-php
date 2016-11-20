@@ -83,43 +83,43 @@ class ConditionEvaluatorTest extends PHPUnit_Framework_TestCase {
     # If "Bool" is used with a non-bool, it always evaluates to false.
     $context = ['authz::mfa' => 'yes'];
     $this->assertNotEvaluates($context, ["Bool" => ['authz::mfa' => true]]);
-    $this->assertNotEvaluates($context, ["Bool" => ['authz::mfa' => false]]); 
+    $this->assertNotEvaluates($context, ["Bool" => ['authz::mfa' => false]]);
   }
 
   public function testConditionStringMatchWorks() {
     $context = array(
-    	'aws:CurrentTime' => '2016-11-11T11:12:13Z',
-    	'aws::username' => 'admin',
-    	'aws::host' => 'localhost',
-    	'authz::mfa' => true,
+        'aws:CurrentTime' => '2016-11-11T11:12:13Z',
+        'aws::username' => 'admin',
+        'aws::host' => 'localhost',
+        'authz::mfa' => true,
         's3::bucket' => 'demo-site',
         's3::resource' => ''
     );
 
     $conditions = [
-    	"StringEquals" => [
-    		"aws::username" => ["admin", "root"],
-    	],
-    	"StringLike" => [
-    		"aws::username" => "a*",
-    		"aws::host" => "loc*st"
-    	],
-    	"Bool" => [
-    		"authz::mfa" => true,
-    	],
-		"DateGreaterThan" => [
-			"aws:CurrentTime" => "2013-08-16T12:00:00Z"
-		],
-		# Expired in 2022
-		"DateLessThan" => [
-			"aws:CurrentTime" => "2022-12-24T23:59:59Z"
-		]
+        "StringEquals" => [
+            "aws::username" => ["admin", "root"],
+        ],
+        "StringLike" => [
+            "aws::username" => "a*",
+            "aws::host" => "loc*st"
+        ],
+        "Bool" => [
+            "authz::mfa" => true,
+        ],
+        "DateGreaterThan" => [
+            "aws:CurrentTime" => "2013-08-16T12:00:00Z"
+        ],
+        # Expired in 2022
+        "DateLessThan" => [
+            "aws:CurrentTime" => "2022-12-24T23:59:59Z"
+        ]
     ];
 
     $this->assertEvaluates($context, $conditions);
 
     # change one thing, and it breaks
     $context['aws::username'] = 'root';
-    $this->assertNotEvaluates($context, $conditions);    
+    $this->assertNotEvaluates($context, $conditions);
   }
 }

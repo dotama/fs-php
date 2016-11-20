@@ -6,9 +6,9 @@ class StringEqualsCondition {
 			return false;
 		}
 		if (is_array($expected)) {
-			return in_array($value, $expected);	
+			return in_array($value, $expected);
 		} else {
 			return $value === $expected;
-		}		
+		}
 	}
 }

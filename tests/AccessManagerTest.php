@@ -30,7 +30,7 @@ class AccessManagerTest extends PHPUnit_Framework_TestCase {
         # kind of a duplicate to forUsername(), but good for testing here
         'StringEquals' => [AccessManager::CTX_USERNAME => 'zeisss'],
       ]);
-    return $accessManager; 
+    return $accessManager;
   }
 
   public function testConditions() {
