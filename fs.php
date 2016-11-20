@@ -39,11 +39,9 @@ function config() {
 	}
 
 	$errorHandler = null;
-	if (!empty($airbrake_options)) {
-		$errorHandler = new Airbrake\Notifier($airbrake_options);
-
-		$handler = new Airbrake\ErrorHandler($errorHandler);
-		$handler->register();
+	if (isset($airbrake_key)) {
+		$cfg = new Airbrake\Configuration($airbrake_key, $airbrake_options);
+		$errorHandler = new Airbrake\Client($cfg);
 	}
 
 	return [$authenticators, $bucket, $acls, $accessManager, $events, $errorHandler];

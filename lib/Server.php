@@ -98,7 +98,7 @@ class Server {
 			}
 			$this->sendError($e, $code);
 			if (!empty($this->errorHandler)) {
-				$this->errorHandler->notify($e);
+				$this->errorHandler->notifyOnException($e);
 			}
 		}
 	}
