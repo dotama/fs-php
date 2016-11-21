@@ -6,11 +6,21 @@ class ConditionEvaluator {
 	public function __construct($types = null) {
 		if ($types == NULL) {
 			$types = array(
+				// String
 				'StringLike' => new StringLikeCondition(),
-				'DateGreaterThan' => new DateGreaterThanCondition(),
-				'DateLessThan' => new DateLessThanCondition(),
-				'Bool' => new BoolCondition(),
+				'StringNotLike' => new InvertCondition(new StringLikeCondition()),
 				'StringEquals' => new StringEqualsCondition(),
+				'StringNotEquals' => new InvertCondition(new StringEqualsCondition()),
+
+				// Date
+				'DateGreaterThan' => new DateGreaterThanCondition(),
+				'DateNotGreaterThan' => new InvertCondition(new DateGreaterThanCondition()),
+				'DateLessThan' => new DateLessThanCondition(),
+				'DateNotLessThan' => new InvertCondition(new DateLessThanCondition()),
+
+				// Bool
+				'Bool' => new BoolCondition(),
+				
 			);
 		}
 		$this->types = $types;
@@ -46,10 +56,13 @@ class ConditionEvaluator {
 	public function evaluate($context, $conditions) {
 		foreach ($conditions as $name => $objects) {
 			$condition = $this->types[$name];
+			if (!isset($condition)) {
+				return [false, "Unknown condition '$name"];
+			}
 
 			foreach($objects as $field => $rhs) {
 				if (!isset($context[$field])) {
-					return [false, "Field '$name' is not given in context"];
+					return [false, "Field '$field' is not given in context"];
 				}
 
 				if (is_scalar($rhs)) {
@@ -64,7 +77,7 @@ class ConditionEvaluator {
 
 				$f = $condition->fulfills($context[$field], $rhs);
 				if (!$f) {
-					return [false, "'$name' evaluated to false for field '$field' and right handside '" . json_encode($rhs) . "'"];
+					return [false, "'$name' evaluated to false for field '$field' and right handside " . json_encode($rhs)];
 				}
 			}
 		}
