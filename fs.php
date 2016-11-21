@@ -10,7 +10,6 @@ function config() {
 	$keyManager = new KeyManager();
 	$events = new MessagingService();
 	$authenticators = [];
-	$airbrake_options = [];
 
 	# Load config file
 	@include_once(__DIR__ . '/fs.config.php');
@@ -38,13 +37,7 @@ function config() {
 		}
 	}
 
-	$errorHandler = null;
-	if (isset($airbrake_key)) {
-		$cfg = new Airbrake\Configuration($airbrake_key, $airbrake_options);
-		$errorHandler = new Airbrake\Client($cfg);
-	}
-
-	return [$authenticators, $bucket, $acls, $accessManager, $events, $errorHandler];
+	return [$authenticators, $bucket, $acls, $accessManager, $events];
 }
 
 function handleRequest() {
@@ -70,8 +63,8 @@ function handleRequest() {
 		$headers[strtolower($key)] = $value;
 	}
 
-	list($keyManager, $bucket, $acls, $accessManager, $events, $errorHandler) = config();
-	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events, $errorHandler);
+	list($keyManager, $bucket, $acls, $accessManager, $events) = config();
+	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events);
 	$server->handleRequest($host, $method, $path, $headers, $params);
 }
 

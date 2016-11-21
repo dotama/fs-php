@@ -21,6 +21,3 @@ $bucketPath = "/tmp";
 # object $events MessagingService
 # Can be used to forward events to msg-php for post-processing.
 # $events->Configure($endpoint, $access, $secret, $queue);
-
-# array $airbrake_options Options passed to the airbrake notifier
-# $airbrake_options = [];
