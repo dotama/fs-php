@@ -36,22 +36,72 @@ class ConditionEvaluatorTest extends PHPUnit_Framework_TestCase {
     $this->assertEvaluates($context, ["StringEquals" => ["user" => '${a}${b}${c}']]);
   }
 
+  public function testStringNotEqualsIgnoreCase() {
+    $context = ['u' => 'ABC'];
+    $cond = "StringNotEqualsIgnoreCase";
+    $this->assertNotEvaluates($context, [$cond => ['u' => 'abc']]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => ['abc']]]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => ['bca', 'abc']]]);
+
+    $this->assertNotEvaluates($context, [$cond => ['u' => 'ABC']]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => 'Abc']]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => 'abC']]);
+    
+    $this->assertEvaluates($context, [$cond => ['u' => 'cba']]);
+    $this->assertEvaluates($context, [$cond => ['u' => 'a*']]);
+    $this->assertEvaluates($context, [$cond => ['u' => ['cba']]]);
+    $this->assertEvaluates($context, [$cond => ['u' => ['bca', 'dcf']]]);
+    $this->assertEvaluates($context, [$cond => ['u' => true]]);
+    $this->assertEvaluates($context, [$cond => ['u' => false]]);
+
+    $this->assertNotEvaluates($context, [$cond => ['a' => 'abc']]);
+    $this->assertNotEvaluates($context, [$cond => ['u*' => 'abc']]);
+    $this->assertNotEvaluates($context, [$cond => ['username' => 'abc']]);
+  }
+
   public function testStringNotEquals() {
     $context = ['u' => 'abc'];
     $this->assertNotEvaluates($context, ["StringNotEquals" => ['u' => 'abc']]);
     $this->assertNotEvaluates($context, ["StringNotEquals" => ['u' => ['abc']]]);
     $this->assertNotEvaluates($context, ["StringNotEquals" => ['u' => ['bca', 'abc']]]);
 
+    $this->assertEvaluates($context, ["StringNotEquals" => ['u' => 'ABC']]);
+    $this->assertEvaluates($context, ["StringNotEquals" => ['u' => 'Abc']]);
+    $this->assertEvaluates($context, ["StringNotEquals" => ['u' => 'abC']]);
+    
     $this->assertEvaluates($context, ["StringNotEquals" => ['u' => 'cba']]);
     $this->assertEvaluates($context, ["StringNotEquals" => ['u' => 'a*']]);
     $this->assertEvaluates($context, ["StringNotEquals" => ['u' => ['cba']]]);
     $this->assertEvaluates($context, ["StringNotEquals" => ['u' => ['bca', 'dcf']]]);
     $this->assertEvaluates($context, ["StringNotEquals" => ['u' => true]]);
     $this->assertEvaluates($context, ["StringNotEquals" => ['u' => false]]);
-    
+
     $this->assertNotEvaluates($context, ["StringNotEquals" => ['a' => 'abc']]);
     $this->assertNotEvaluates($context, ["StringNotEquals" => ['u*' => 'abc']]);
     $this->assertNotEvaluates($context, ["StringNotEquals" => ['username' => 'abc']]);
+  }
+
+  public function testStringEqualsIgnoreCase() {
+    $context = ['u' => 'ABC'];
+    $cond = "StringEqualsIgnoreCase";
+    $this->assertEvaluates($context, [$cond => ['u' => 'abc']]);
+    $this->assertEvaluates($context, [$cond => ['u' => ['abc']]]);
+    $this->assertEvaluates($context, [$cond => ['u' => ['bca', 'abc']]]);
+
+    $this->assertEvaluates($context, [$cond => ['u' => 'ABC']]);
+    $this->assertEvaluates($context, [$cond => ['u' => 'Abc']]);
+    $this->assertEvaluates($context, [$cond => ['u' => 'abC']]);
+    
+    $this->assertNotEvaluates($context, [$cond => ['u' => 'cba']]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => 'a*']]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => ['cba']]]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => ['bca', 'dcf']]]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => true]]);
+    $this->assertNotEvaluates($context, [$cond => ['u' => false]]);
+
+    $this->assertNotEvaluates($context, [$cond => ['a' => 'abc']]);
+    $this->assertNotEvaluates($context, [$cond => ['u*' => 'abc']]);
+    $this->assertNotEvaluates($context, [$cond => ['username' => 'abc']]);
   }
 
   public function testStringEquals() {
@@ -60,6 +110,10 @@ class ConditionEvaluatorTest extends PHPUnit_Framework_TestCase {
     $this->assertEvaluates($context, ["StringEquals" => ['u' => ['abc']]]);
     $this->assertEvaluates($context, ["StringEquals" => ['u' => ['bca', 'abc']]]);
 
+    $this->assertNotEvaluates($context, ["StringEquals" => ['u' => 'ABC']]);
+    $this->assertNotEvaluates($context, ["StringEquals" => ['u' => 'Abc']]);
+    $this->assertNotEvaluates($context, ["StringEquals" => ['u' => 'abC']]);
+    
     $this->assertNotEvaluates($context, ["StringEquals" => ['u' => 'cba']]);
     $this->assertNotEvaluates($context, ["StringEquals" => ['u' => 'a*']]);
     $this->assertNotEvaluates($context, ["StringEquals" => ['u' => ['cba']]]);

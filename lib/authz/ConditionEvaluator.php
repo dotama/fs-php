@@ -10,7 +10,9 @@ class ConditionEvaluator {
 				'StringLike' => new StringLikeCondition(),
 				'StringNotLike' => new InvertCondition(new StringLikeCondition()),
 				'StringEquals' => new StringEqualsCondition(),
+				'StringEqualsIgnoreCase' => new IgnoreCaseCondition(new StringEqualsCondition()),
 				'StringNotEquals' => new InvertCondition(new StringEqualsCondition()),
+				'StringNotEqualsIgnoreCase' => new InvertCondition(new IgnoreCaseCondition(new StringEqualsCondition())),
 
 				// Date
 				'DateGreaterThan' => new DateGreaterThanCondition(),
@@ -55,10 +57,11 @@ class ConditionEvaluator {
 	// Returns [$success, $reason]. $reason contains a hint, if $success is false, otherwilse null.
 	public function evaluate($context, $conditions) {
 		foreach ($conditions as $name => $objects) {
-			$condition = $this->types[$name];
-			if (!isset($condition)) {
+			if (!isset($this->types[$name])) {
 				return [false, "Unknown condition '$name"];
 			}
+			$condition = $this->types[$name];
+			
 
 			foreach($objects as $field => $rhs) {
 				if (!isset($context[$field])) {
