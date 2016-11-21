@@ -3,16 +3,17 @@
 class ConditionEvaluatorTest extends PHPUnit_Framework_TestCase {
   private function assertEvaluates($context, $conditions) {
     $eval = new ConditionEvaluator();
-    $result = $eval->evaluate($context, $conditions);
+    list($result, $reason) = $eval->evaluate($context, $conditions);
 
-    $this->assertTrue($result);
+    $this->assertEquals([true, null], [$result, $reason]);
   }
 
   private function assertNotEvaluates($context, $conditions) {
     $eval = new ConditionEvaluator();
-    $result = $eval->evaluate($context, $conditions);
+    list($result, $reason) = $eval->evaluate($context, $conditions);
 
     $this->assertFalse($result);
+    $this->assertNotEquals("", $reason);
   }
 
   public function testResolve() {
