@@ -58,7 +58,10 @@ build:
             username: $FS_USER
             password: $FS_PASSWORD
             acl: public-read
-
+    after-steps:
+      - wercker/slack-notifier@1.2.1:
+          url: $DEPLOY_SLACK_URL
+          notify_on: failed
 deploy:
     steps:
         - script:
