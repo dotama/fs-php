@@ -76,11 +76,12 @@ class Server {
 			$authenticated = $this->doAuthentication();
 			$authorized = $this->doAuthorization($name, $resource, $objectInfo);
 
-			if (!$authorized && !$authenticated) {
-				throw new Exception("Authentication required", 401);
-			} else if (!$authorized) {
-				// 403 forbidden
-				throw new Exception("Forbidden", 403);
+			if (!$authorized) {
+				if (!$authenticated) {
+					throw new Exception("Authentication required", 401);
+				} else {
+					throw new Exception("Forbidden", 403);
+				}
 			}
 
 			$this->resource = $resource;

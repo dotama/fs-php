@@ -26,7 +26,7 @@ class AccessManagerTest extends PHPUnit_Framework_TestCase {
       ->forUsername('zeisss')
       ->forPrefix('/data')
       ->permission('mfs::*')
-      ->mustMatch([
+      ->withCondition([
         # kind of a duplicate to forUsername(), but good for testing here
         'StringEquals' => [AccessManager::CTX_USERNAME => 'zeisss'],
       ]);

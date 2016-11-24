@@ -53,7 +53,7 @@ class Policy {
 		return $this;
 	}
 
-	public function mustMatch($conditions) {
+	public function withCondition($conditions) {
 		foreach ($conditions as $cType => $cFields) {
 			if (isset($this->conditions[$cType])) {
 				foreach($cFields as $name => $expectedValue) {
@@ -70,6 +70,8 @@ class AccessManager {
 	const CTX_USERNAME = 'authn::username';
 	const CTX_CURRENTTIME = 'sys::CurrentTime';
 	const CTX_REQUEST_IP = 'req::ip';
+	const CTX_PERMISSION = 'permission';
+	const CTX_RESOURCE = 'resource';
 
 	private $policies;
 	private $conditions;
@@ -81,7 +83,7 @@ class AccessManager {
 		$this->newPolicy()
 			->description("Allow unauthorized read access to resources with acl 'public-read'")
 			->permission('mfs::GetObject')
-			->mustMatch([
+			->withCondition([
 				"StringEquals" => ["acl" => "public-read"]
 			]);
 	}
@@ -103,9 +105,8 @@ class AccessManager {
 		$allowed = false;
 
 		$context = [
-			'mfs::resource' => $resource,
-			'mfs::permission' => $permission,
-
+			AccessManager::CTX_RESOURCE => $resource,
+			AccessManager::CTX_PERMISSION => $permission,
 			AccessManager::CTX_REQUEST_IP => $clientIP,
 			AccessManager::CTX_CURRENTTIME => date("c"),
 		];

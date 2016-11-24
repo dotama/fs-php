@@ -39,11 +39,13 @@ class ConditionEvaluator {
 
 			$end = mb_strpos($input, '}', $begin);
 			if ($end === FALSE) {
-				trigger_error("Failed to find end of var token '}' after position $begin for '$input'.");
-				return NULL;
+				throw new Exception("Failed to find end of var token '}' after position $begin for '$input'.");
 			}
 
 			$key = substr($input, $begin+2, $end - $begin - 2);
+			if (!isset($vars[$key])) {
+				throw new Exception("Unresolved variable $key in input '$input'");
+			}
 			$input = substr_replace(
 				$input,
 				$vars[$key],
@@ -68,14 +70,18 @@ class ConditionEvaluator {
 					return [false, "Field '$field' is not given in context"];
 				}
 
-				if (is_scalar($rhs)) {
-					$rhs = $this->resolve($rhs, $context);
-				} else if (is_array($rhs)) {
-					$rhs = array_map(function($v) use ($context) {
-						return $this->resolve($v, $context);
-					}, $rhs);
-				} else {
-					return [false, "Unexpected type for right handside '$rhs'"];
+				try {
+					if (is_scalar($rhs)) {
+						$rhs = $this->resolve($rhs, $context);
+					} else if (is_array($rhs)) {
+						$rhs = array_map(function($v) use ($context) {
+							return $this->resolve($v, $context);
+						}, $rhs);
+					} else {
+						return [false, "Unexpected type for right handside '$rhs'"];
+					}
+				} catch (Exception $e) {
+					return [false, $e->getMessage()];
 				}
 
 				$f = $condition->fulfills($context[$field], $rhs);
