@@ -73,7 +73,7 @@ class Server {
 			}
 			list($name, $resource, $handler) = $this->getHandler();
 
-			$authenticated = $this->doAuthentication($name, $resource);
+			$authenticated = $this->doAuthentication();
 			$authorized = $this->doAuthorization($name, $resource, $objectInfo);
 
 			if (!$authorized && !$authenticated) {
@@ -275,7 +275,7 @@ class Server {
 		echo json_encode($json, JSON_UNESCAPED_SLASHES);
 	}
 
-	private function doAuthentication($permission, $prefix) {
+	private function doAuthentication() {
 		$userid = $this->authenticators->authenticate($this->path, $this->params, $this->headers);
 
 		if ($userid == null) {
