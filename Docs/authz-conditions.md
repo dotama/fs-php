@@ -8,16 +8,18 @@ $accessManager-newPolicy()->withCondition([
 		"fieldName" => "expectedValueOrPattern",
 		"otherField" => ["validValue1", "validValue2"]
 	],
-	// ... more conditions
+	// ... more operations
 ]);
 
 ```
 
-The Policy object provides a `withCondition()` function to define a set of conditions that must be matched for the policy to be fulfilled. The set is indexed by the operation names. To check a policy, each condition is checked.
+The Policy object provides a `withCondition()` function to define a condition that must be evaluated to be true. The set is indexed by the operation names. To check a policy, each operation is checked.
 
-Each condition points to a table of field names and their expected values. The expected value can be either a single value or a list of values. The field name is looked up from the request context. Valid variables are listed below. If the variable is not available in the request, the policy is not fulfilled.
+Each operation points to a table of field names and their expected values. The expected value can be either a single value or a list of values. The field name is looked up from the request context. Valid variables are listed below. If the variable is not available in the request, the condition is not met.
 
 Based on the operation, the comparison can vary slightly. For `StringEquals`, an exact match of the left side and right side is required. For `DateGreatherThan`, both sides must be a valid datestring in ISO8601 format. An invalid date will abort the check, even if both sides are equal.
+
+The right handside can also contain variables, but these must be noted like this: `${varname}`. If a used variable is not part of the context, the condition is not met.
 
 ## Available Variables
 
@@ -71,6 +73,6 @@ permission       | `"mfs::GetObject"`            | The required permission for t
 		->description("Every authenticated user can write to his own names prefix")
 		->permission('*')
 		->withCondition([
-			"StringLike" => ["resource" => '/*/']
+			"StringLike" => ["resource" => '/${authn::username}/']
 		]);
 	```
