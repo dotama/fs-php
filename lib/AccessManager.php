@@ -82,7 +82,7 @@ class AccessManager {
 			->description("Allow unauthorized read access to resources with acl 'public-read'")
 			->permission('mfs::GetObject')
 			->mustMatch([
-				"StringEquals" => ["mfs::acl" => "public-read"]
+				"StringEquals" => ["acl" => "public-read"]
 			]);
 	}
 
@@ -107,9 +107,11 @@ class AccessManager {
 			'mfs::permission' => $permission,
 
 			AccessManager::CTX_REQUEST_IP => $clientIP,
-			AccessManager::CTX_USERNAME => $username,
 			AccessManager::CTX_CURRENTTIME => date("c"),
 		];
+		if (!empty($username)) {
+			$context[AccessManager::CTX_USERNAME] = $username;
+		}
 		if (!empty($resourceInfo)) {
 			$context = array_merge($context, $resourceInfo);
 		}

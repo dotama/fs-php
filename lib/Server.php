@@ -81,15 +81,9 @@ class Server {
 			} else if (!$authorized) {
 				// 403 forbidden
 				throw new Exception("Forbidden", 403);
-			} else if (!$authenticated) {
-				// 401 access denied
-				throw new Exception("Authentication required", 401);
-			} else if (!empty($this->path) && empty($objectInfo)) {
-				// 404 not found
-				throw new Exception("Object not found", 404);
 			}
 
-			$this->resource = $this->params['prefix'];
+			$this->resource = $resource;
 
 			call_user_func([$this, $handler]);
 
