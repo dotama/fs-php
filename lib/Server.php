@@ -73,9 +73,23 @@ class Server {
 			}
 			list($name, $resource, $handler) = $this->getHandler();
 
-			$this->requiresAuthentication($name, $resource);
-			$this->checkAuthorization($name, $resource, $objectInfo);
-			$this->resource = $prefix;
+			$authenticated = $this->doAuthentication($name, $resource);
+			$authorized = $this->doAuthorization($name, $resource, $objectInfo);
+
+			if (!$authorized && !$authenticated) {
+				throw new Exception("Authentication required", 401);
+			} else if (!$authorized) {
+				// 403 forbidden
+				throw new Exception("Forbidden", 403);
+			} else if (!$authenticated) {
+				// 401 access denied
+				throw new Exception("Authentication required", 401);
+			} else if (!empty($this->path) && empty($objectInfo)) {
+				// 404 not found
+				throw new Exception("Object not found", 404);
+			}
+
+			$this->resource = $this->params['prefix'];
 
 			call_user_func([$this, $handler]);
 
@@ -261,30 +275,23 @@ class Server {
 		echo json_encode($json, JSON_UNESCAPED_SLASHES);
 	}
 
-	private function requiresAuthentication($permission, $prefix) {
+	private function doAuthentication($permission, $prefix) {
 		$userid = $this->authenticators->authenticate($this->path, $this->params, $this->headers);
 
 		if ($userid == null) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
-			throw new Exception("Authentication required", 401);
+			return false;
 		}
-		return $userid;
+		$this->username = $userid;
+		return true;
 	} 
 
-	private function checkAuthentication() {
-		if ($userid !== null) {
-			$this->username = $userid;
-			return true;
-		}
-		return false;
-	}
-
-	// checks is the current request is allowed to continue
+	// doAuthorization() checks is the current request is allowed to continue
 	//
 	// @param string permission
 	// @param array $resource
 	// @throws AccessDeniedException
-	private function checkAuthorization($permission, $prefix, $resource) {
+	private function doAuthorization($permission, $prefix, $resource) {
 		$permission = 'mfs::' . $permission;
 
 		$resourceInfo = [];
@@ -306,8 +313,6 @@ class Server {
 			$prefix,
 			$resource
 		);
-		if (!$granted) {
-			throw new Exception("Access denied - ${permission} for '${prefix}'", 403);
-		}
+		return $granted;
 	}
 }
