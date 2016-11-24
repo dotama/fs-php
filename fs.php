@@ -62,10 +62,11 @@ function handleRequest() {
 	foreach($headers AS $key => $value) {
 		$headers[strtolower($key)] = $value;
 	}
+	$clientIP = $_SERVER['REMOTE_ADDR'];
 
 	list($keyManager, $bucket, $acls, $accessManager, $events) = config();
 	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events);
-	$server->handleRequest($host, $method, $path, $headers, $params);
+	$server->handleRequest($host, $method, $path, $headers, $params, $clientIP);
 }
 
 handleRequest();

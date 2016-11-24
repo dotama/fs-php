@@ -8,6 +8,7 @@ class Server {
 	private $events;
 	private $errorHandler;
 
+	private $clientIP;
 	private $headers;
 	private $params;
 	private $host;
@@ -33,10 +34,6 @@ class Server {
 			if ($this->path == "/" || $this->path == "") {
 				throw new Exception("HEAD not supported here", 405);
 			} else {
-				$info = $this->bucket->getObjectInfo($this->path);
-				if ($this->acls->allowsUnauthorizedRead($info['acl'])) {
-					return ['GetPublicObject', $this->path, 'handleGetObject'];
-				}
 				return ['GetObject', $this->path, 'handleGetObject'];
 			}
 		case "GET":
@@ -45,10 +42,6 @@ class Server {
 			} else if ($this->path == "/" || $this->path == "") {
 				return ['ListObjects', empty($this->params['prefix']) ? '/' : $this->params['prefix'], 'handleListObjects'];
 			} else {
-				$info = $this->bucket->getObjectInfo($this->path);
-				if ($this->acls->allowsUnauthorizedRead($info['acl'])) {
-					return ['GetPublicObject', $this->path, 'handleGetObject'];
-				}
 				return ['GetObject', $this->path, 'handleGetObject'];
 
 			}
@@ -65,24 +58,25 @@ class Server {
 		}
 	}
 
-	public function handleRequest($host, $method, $path, $headers, $params) {
+	public function handleRequest($host, $method, $path, $headers, $params, $clientIP) {
 		$this->headers = $headers;
 		$this->params = $params;
 		$this->host = $host;
 		$this->method = $method;
 		$this->path = $path;
+		$this->clientIP = $clientIP;
 
 		try {
+			$objectInfo = [];
+			if (!empty($this->path)) {
+				$objectInfo = $this->bucket->getObjectInfo($this->path);
+			}
 			list($name, $resource, $handler) = $this->getHandler();
 
-			switch($name) {
-			// Public functions need no auth check.
-			case "GetPublicObject":
-			case "SendDebug":
-				break;
-			default:
-				$this->requiresAuthentication($name, $resource);
-			}
+			$this->requiresAuthentication($name, $resource);
+			$this->checkAuthorization($name, $resource, $objectInfo);
+			$this->resource = $prefix;
+
 			call_user_func([$this, $handler]);
 
 			# If errors occur, this is normally never reached. so we only publish success events.
@@ -268,32 +262,52 @@ class Server {
 	}
 
 	private function requiresAuthentication($permission, $prefix) {
-		if (!$this->checkAuthentication()) {
+		$userid = $this->authenticators->authenticate($this->path, $this->params, $this->headers);
+
+		if ($userid == null) {
 			header('WWW-Authenticate: Basic realm="fs.php"');
-
 			throw new Exception("Authentication required", 401);
-		} else {
-			$permission = 'mfs::' . $permission;
-			$granted = $this->accessManager->isGranted(
-				$prefix,
-				$this->username,
-				$permission
-			);
-
-			if (!$granted) {
-				throw new Exception("Access denied - {$permission} for '{$prefix}'", 403);
-			}
-
-			$this->resource = $prefix;
 		}
-	}
+		return $userid;
+	} 
 
 	private function checkAuthentication() {
-		$userid = $this->authenticators->authenticate($this->path, $this->params, $this->headers);
 		if ($userid !== null) {
 			$this->username = $userid;
 			return true;
 		}
 		return false;
+	}
+
+	// checks is the current request is allowed to continue
+	//
+	// @param string permission
+	// @param array $resource
+	// @throws AccessDeniedException
+	private function checkAuthorization($permission, $prefix, $resource) {
+		$permission = 'mfs::' . $permission;
+
+		$resourceInfo = [];
+		if (!empty($resource)) {
+			foreach($resource as $k => $v) {
+				$resourceInfo['mfs::' . $k] = $v;
+			}
+		}
+
+		$granted = $this->accessManager->isAuthorized(
+			// Subject
+			$this->username,
+			$this->clientIP,
+
+			// Operation
+			$permission,
+
+			// Target
+			$prefix,
+			$resource
+		);
+		if (!$granted) {
+			throw new Exception("Access denied - ${permission} for '${prefix}'", 403);
+		}
 	}
 }

@@ -35,11 +35,6 @@ class ACLs {
 		return NULL;
 	}
 
-	public function allowsUnauthorizedRead($aclName) {
-		$acl = $this->byName($aclName);
-		return ($acl['mode'] & 04) > 0;
-	}
-
 	public static function defaultACLs() {
 		$acls = new ACLs();
 		$acls->define('public-read', 0664);

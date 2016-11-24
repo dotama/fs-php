@@ -77,6 +77,13 @@ class AccessManager {
 	public function __construct() {
 		$this->policies = array();
 		$this->conditions = new ConditionEvaluator();
+
+		$this->newPolicy()
+			->description("Allow unauthorized read access to resources with acl 'public-read'")
+			->permission('mfs::GetObject')
+			->mustMatch([
+				"StringEquals" => ["mfs::acl" => "public-read"]
+			]);
 	}
 
 	public function newPolicy() {
@@ -85,9 +92,13 @@ class AccessManager {
 		return $policy;
 	}
 
+	public function isAuthorized($user, $clientIP, $permission, $prefix, $resourceInfo) {
+		return $this->isGranted($prefix, $user, $permission, $clientIP, $resourceInfo);
+	}
+
 	// isGranted returns true if the given $username has allowance to perform
 	// $permission onto $prefix.
-	public function isGranted($prefix, $username, $permission) {
+	public function isGranted($prefix, $username, $permission, $clientIP = null, $resourceInfo = null) {
 		$resource = 'mfs:' . $prefix;
 		$allowed = false;
 
@@ -95,9 +106,13 @@ class AccessManager {
 			'mfs::resource' => $resource,
 			'mfs::permission' => $permission,
 
+			AccessManager::CTX_REQUEST_IP => $clientIP,
 			AccessManager::CTX_USERNAME => $username,
 			AccessManager::CTX_CURRENTTIME => date("c"),
 		];
+		if (!empty($resourceInfo)) {
+			$context = array_merge($context, $resourceInfo);
+		}
 
 		// Logic is as follows:
 		// * If a policy has usernames, one must match
