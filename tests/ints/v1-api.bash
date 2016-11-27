@@ -1,5 +1,8 @@
 #!/bin/bash
 
+check() {
+  echo -n "✔"
+}
 assertEquals() {
   local expected=$1
   local value=$2
@@ -77,7 +80,7 @@ testHappyCase() {
   assertJSONContains "./output" '."common-prefixes"[]' '/lib/'
   assertJSONNotContains "./output" '.objects[] | .key' '/lib/ACL.xml'
 
-  echo -n "."
+  check
 
   # prefix searches work for files
   test -f ./phpunit.xml
@@ -88,7 +91,7 @@ testHappyCase() {
   assertJSONContains "./output" '.objects[] | .key' '/phpunit.xml'
   assertJSONNotContains "./output" '.objects[] | .key' '/lib/ACL.xml'
   assertJSONNotContains "./output" '."common-prefixes"' '/lib/'
-  echo -n "."
+  check
 
   # prefixes work recursive if no delimiter is given
   result=$(curl $WITHAUTH "$ENDPOINT?prefix=/li" $OPTS)
@@ -97,7 +100,7 @@ testHappyCase() {
   assertJSONContains "./output" '.objects[] | .key' '/lib/ACL.php'
   assertJSONNotContains "./output" '.objects[] | .key' '/phpunit.xml'
   assertJSONNotContains "./output" '."common-prefixes"' '/lib/'
-  echo -n "."
+  check
 
   # prefixes work non-recursive if delimiter is given
   result=$(curl $WITHAUTH "$ENDPOINT?delimiter=/&prefix=/li" $OPTS)
@@ -107,12 +110,12 @@ testHappyCase() {
   assertJSONNotContains "./output" '.objects' '/phpunit.xml'
   assertJSONNotContains "./output" '.objects' '/lib/ACL.php'
   assertJSONContains "./output" '."common-prefixes"[]' '/lib/'
-  echo -n "."
+  check
 
   # Create a file
   result=$(curl -XPUT $WITHAUTH "$ENDPOINT/somefile" -d 'content' $OPTS)
   assertEquals "201" "${result}"
-  echo -n "."
+  check
 
   # ACL in ListObject should by private, because we haven't given anything when creating
   result=$(curl $WITHAUTH "$ENDPOINT?prefix=/somefile" $OPTS)
@@ -122,82 +125,83 @@ testHappyCase() {
   # No auth disallows file access
   result=$(curl "$ENDPOINT/somefile" $OPTS)
   assertEquals "401" "$result"
-  echo -n "."
+  check
 
   # No auth disallows file access
   result=$(curl -I "$ENDPOINT/somefile" $OPTS)
   assertEquals "401" "$result"
-  echo -n "."
+  check
 
   # Given auth, we can simply GET the file
   result=$(curl $WITHAUTH "$ENDPOINT/somefile" $OPTS)
   assertEquals "200" "$result"
   assertEquals "content" "$(cat ./output)"
-  echo -n "."
+  check
 
   # we can check it exists
   result=$(curl -I $WITHAUTH "$ENDPOINT/somefile" $OPTS)
   assertEquals "200" "$result"
-  echo -n "."
+  check
 
   # We can change the ACL
   result=$(curl -XPUT $WITHAUTH "$ENDPOINT/somefile?acl" -d 'public-read' $OPTS)
   assertEquals "204" "${result}"
-  echo -n "."
+  check
 
   # ACL in ListObject should now read 'public-read'
   result=$(curl $WITHAUTH "$ENDPOINT?prefix=/somefile" $OPTS)
   assertEquals "200" "${result}"
   assertJSONContains "./output" '.objects[0].acl' 'public-read'
+  check
 
   # After making somefile public, we can read it
   result=$(curl "$ENDPOINT/somefile" $OPTS)
   assertEquals "200" "$result"
   assertEquals "content" "$(cat ./output)"
-  echo -n "."
+  check
 
   # After making somefile public, we can read it
   result=$(curl -I "$ENDPOINT/somefile" $OPTS)
   assertEquals "200" "$result"
-  echo -n "."
+  check
 
   # Finally delete the file
   result=$(curl -XDELETE $WITHAUTH "$ENDPOINT/somefile" $OPTS)
   assertEquals "204" "$result"
   test ! -f ./somefile
-  echo -n "."
+  check
 
   # HEAD on the ListObjects route should fail with 405 - because that route doesn't exist
   result=$(curl -I $WITHAUTH "$ENDPOINT/" $OPTS)
   assertEquals "405" "$result"
-  echo -n "."
+  check
 
   # HEAD on the ListObjects route should fail with 405 - because that route doesn't exist
   result=$(curl -I "$ENDPOINT/?test=900" $OPTS)
   assertEquals "405" "$result"
-  echo -n "."
+  check
 
   # PATCH and other methods should fail with 405 - because that route doesn't exist
   result=$(curl -XPATCH $WITHAUTH "$ENDPOINT/somefile?test=950" $OPTS)
   assertEquals "405" "$result"
-  echo -n "."
+  check
 
   # PATCH and other methods should fail with 405 - because that route doesn't exist
   result=$(curl -XPATCH "$ENDPOINT/somefile?test=950" $OPTS)
   assertEquals "405" "$result"
-  echo -n "."
+  check
 
   # GET on a nonexisting resource should return 404
   test ! -f ./somefile
   result=$(curl $WITHAUTH "$ENDPOINT/somefile?test=970" $OPTS)
   assertEquals "404" "$result"
-  echo -n "."
+  check
 
   # GET on a nonexisting resource should return a 401 for unauthenticated reqs
   test ! -f ./somefile
   result=$(curl "$ENDPOINT/somefile?test=980" $OPTS)
   assertEquals "401" "$result"
-  echo -n "."
+  check
 
   echo
 }
@@ -207,14 +211,14 @@ testCreateWithACL() {
   result=$(curl -XPUT -d 'content' $WITHAUTH $ENDPOINT/somefile?test=1000 -H'X-Acl: public-read' $OPTS)
   assertEquals "201" "$result"
   test -f ./somefile
-  echo -n "."
+  check
 
   # ACL in ListObject should now read 'public-read'
   result=$(curl $WITHAUTH "$ENDPOINT?prefix=/somefile" $OPTS)
   assertEquals "200" "${result}"
   assertJSONContains "./output" '.objects[0].key' '/somefile'
   assertJSONContains "./output" '.objects[0].acl' 'public-read'
-  echo -n "."
+  check
 
   echo
 }
@@ -226,7 +230,7 @@ testPrometheusMetrics() {
 
   assertOutputContains "^authn_authenticators_count"
   assertOutputContains "^authz_policies_count"
-  echo -n "."
+  check
 
   echo
 }
