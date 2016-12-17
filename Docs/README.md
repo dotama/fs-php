@@ -9,3 +9,15 @@ It supports 4 basic operations:
  * Delete a file by name
 
 The idea is similar to S3 - do not manage folders but just objects(files).
+
+
+Features:
+
+ * Very simple JSON-API
+ * configurable authentication via HTBasic or JWT tokens
+ * configurable authorization model similar Amazons IAM
+   * Allow/Deny policies
+   * Resource/Permission/User based matching
+   * Complex Conditions based on per-request variables
+* Prometheus text-metrics support
+* No database needed - everything written to disk

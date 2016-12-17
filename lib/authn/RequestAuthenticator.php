@@ -26,7 +26,7 @@ class RequestAuthenticatorSet {
 			if ($userid != null) {
 				if (!is_string($userid) || empty($userid)) {
 					header("HTTP/1.1 500 Internal Server Errror");
-					die('{"message": "Invalid authenticator result."}');
+					die('{"error": true, "message": "Invalid authenticator result."}');
 				}
 				return $userid;
 			}

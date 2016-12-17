@@ -1,11 +1,10 @@
 # Configuration
 
-The file `fs.php` contains a `config` function. It loads the `fs.config.php` file in the same folder,
-which allows the basic configuration. The following objects and variables can be configured:
+Configuration of `fs-php` is handled via the `fs.config.php` file that lives next to  `fs.php`. This allows the basic configuration. The following objects and variables can be configured:
 
- * `$bucketPath` - MUST be configured to point to the place where the files should be located.
+ * `string $bucketPath` - MUST be configured to point to the place where the files should be located.
 
- * `$bucketConfigFiles` - Optional. Can be set to contain further files inside the bucket that should be loaded.
+ * `array[string] $bucketConfigFiles` - Optional. Can be set to contain further files inside the bucket that should be loaded.
 
     Example:
 
@@ -13,16 +12,9 @@ which allows the basic configuration. The following objects and variables can be
     $bucketConfigFiles = ['/configs/policies.php'];
     ```
 
- * `$keyManager`
+    NOTE: Enabling this is a security risk - make sure you have the correct policies in place to secure these locations.
 
-    The KeyManager manages the auth tokens that can be used to authenticate with the API.
-    It is the store for the `BasicAuthenticator` that gets installed by default.
-    This behavior can be disabled by setting `$keyManager` to `null`.
-
-    Use `$keyManager->addBcryptCredentials($name, $hash)` to add a bcrypt hashed password.
-    Use `$keyManager->addKey($name, $password)` to add a plain text password. Not recommended!
-
- * `$accessManager`
+ * `object $accessManager`
 
     Use `$accessManager->newPolicy()` to get a Policy object. It supports the following ways to modify the policy:
 
@@ -46,17 +38,25 @@ which allows the basic configuration. The following objects and variables can be
       ->permission('mfs::(Delete|Put)*');
     ```
 
-* `$authenticators`
+* `array[RequestAuthenticator] $authenticators`
 
   An array of `RequestAuthenticator` objects. `$keyManager` will be added to it,
   after the config file has been included.
 
   `RequestAuthenticator` is described in the `lib/KeyManager.php` file.
 
+ * `object $keyManager`
+
+    The KeyManager manages the static auth tokens that can be used to authenticate with the API. It is the store for the `BasicAuthenticator` that gets installed by default.
+    This behavior can be disabled by setting `$keyManager` to `null`.
+
+    Use `$keyManager->addBcryptCredentials($name, $hash)` to add a bcrypt hashed password.
+    Use `$keyManager->addKey($name, $password)` to add a plain text password. Not recommended!
+
 ## Policies
 
 
-fs-php has a policy concept to support fine grained control over the actions each
+`fs-php` has a policy concept to support fine grained control over the actions each
 user can perform. Policy objects can grant or deny rights based on user,
 resource and action.
 
@@ -84,7 +84,6 @@ The string parameter for matching support wildcards and grouping.
  * `forUsername('(adam|bob|eve)')` match all three usernames.
  * `forUsername('z*')` match all users starting with a `z`.
 
-
 ### Permissions
 
 Each operations equals on permissions that is expected to be granted by a policy to perform the operation:
@@ -94,6 +93,11 @@ Each operations equals on permissions that is expected to be granted by a policy
  * `mfs::PutObject`
  * `mfs::PutObjectACL`
  * `mfs::DeleteObject`
+
+ Other none-user realted permissions:
+
+ * `mfs::SendDebug`
+ * `mfs::FetchPrometheusMetrics`
 
 ## Provided RequestAuthenticator
 
