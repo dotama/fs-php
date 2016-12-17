@@ -258,12 +258,20 @@ class Server {
 			'message' => $exception->getMessage(),
 			'code' => $exception->getCode()
 		);
-		die(json_encode($response, JSON_UNESCAPED_SLASHES)."\n");
+		$options = JSON_UNESCAPED_SLASHES;
+		if (isset($this->params['pretty'])) {
+			$options |= JSON_PRETTY_PRINT;
+		}
+		die(json_encode($response, $options)."\n");
 	}
 
 	private function sendJson($json) {
 		header('Content-Type: application/json');
-		echo json_encode($json, JSON_UNESCAPED_SLASHES);
+		$options = JSON_UNESCAPED_SLASHES;
+		if (isset($this->params['pretty'])) {
+			$options |= JSON_PRETTY_PRINT;
+		}
+		die(json_encode($json, $options)."\n");
 	}
 
 	private function requiresAuthentication($permission, $prefix) {

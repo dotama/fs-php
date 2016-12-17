@@ -11,6 +11,9 @@ $ baseurl = "http://whereever.your.fs.php.lives/path/fs.php"
 As a workaround to some http servers, all object keys can optionally end in `.ignore` which will be dropped when
 reading/writing. `fs.bash` appends this automatically to all routes.
 
+Generally all API responses are JSON responses, if not stated otherwise. If the URL parameter `pretty` is set, the responses will be pretty printed.
+
+
 ## Authentication
 
 Authentication can happen over Basic Auth or using JWT as a bearer token and cookies. See `Configuration` for more details.
