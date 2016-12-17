@@ -127,7 +127,7 @@ class LocalBucket {
 		}
 
 		if ($path[0] != "/") {
-			throw new Exception("Invalid path - must start with slash (/)");
+			throw new Exception("Invalid path - must start with slash (/)", 400);
 		}
 
 		$pathElements = explode("/", $path);
@@ -136,14 +136,14 @@ class LocalBucket {
 			#echo "$index => $s\n";
 			if ($index == 0) {
 				if ($s != "") {
-					throw new Exception('Invalid path element.');
+					throw new Exception('Invalid path element', 400);
 				}
 			}
 			else if ($index == (sizeof($pathElements) - 1) && $s == "") {
 				continue;
 			}
 			else if ($s == "" || $s == "..") {
-				throw new Exception("Invalid empty path element.");
+				throw new Exception("Invalid empty path element", 400);
 			}
 		}
 		return $this->path.$path;
