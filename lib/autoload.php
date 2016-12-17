@@ -5,10 +5,10 @@ interface MetricsProvider {
 }
 
 # general authnz
-require_once(__DIR__ . '/RequestAuthenticator.php');
-require_once(__DIR__ . '/JWTAndSessionAuthenticator.php');
-require_once(__DIR__ . '/AccessManager.php');
-require_once(__DIR__ . '/KeyManager.php');
+require_once(__DIR__ . '/authn/RequestAuthenticator.php');
+require_once(__DIR__ . '/authn/JWTAndSessionAuthenticator.php');
+require_once(__DIR__ . '/authn/KeyManager.php');
+require_once(__DIR__ . '/authz/AccessManager.php');
 
 # fs-php specific
 require_once(__DIR__ . '/ACL.php');
