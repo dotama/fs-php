@@ -29,12 +29,13 @@ Configuration of `fs-php` is handled via the `fs.config.php` file that lives nex
     ```
     $accessManager->newPolicy()
       ->description('Grant zeisss access to everything')
-      ->forUsername('zeisss')
-      ->forPrefix('/');
+      ->permission('*')
+      ->forUsername('zeisss');
 
     $accessManager->newPolicy()
       ->description('Deny write access to /configs/')
-      ->deny()->forPrefix("/configs/")
+      ->deny()
+      ->forPrefix("/configs/")
       ->permission('mfs::(Delete|Put)*');
     ```
 

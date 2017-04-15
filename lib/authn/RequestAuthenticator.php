@@ -40,7 +40,7 @@ class RequestAuthenticatorSet {
 		];
 
 		foreach($this->set as $authenticator) {
-			if ($authenticator instanceof RequestAuthenticator) {
+			if ($authenticator instanceof MetricsProvider) {
 				$metrics = array_merge($metrics, $authenticator->getMetrics());
 			}
 		}
