@@ -10,6 +10,7 @@ build:
             packages: git unzip jq
         #- mbrevda/composer-install@1.0.1
         - uk-hando/composer-install
+            dev: true
         - script:
             name: Run Unit Tests
             code: |
