@@ -1,10 +1,10 @@
-# Summary
+## Summary
 
 * [Introduction](README.md)
 
-# For Users
+## For Users
 * [Object API](Docs/API.md)
 
-# For Admins
+## For Admins
 * [Configuration](Docs/Configuration.md)
 
