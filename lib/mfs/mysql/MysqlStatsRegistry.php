@@ -25,7 +25,7 @@ class MysqlStatsRegistry implements StatsRegistry {
 		return $result;
 	}
 
-	public function counter_inc($key, $labels = [], $val = 1) {
+	public function counter_inc($name, $labels = [], $inc = 1) {
 		$l = json_encode($labels);
 		$sql = 'INSERT DELAYED INTO `mfs_stats` (`name`, `labels`, `value`) VALUES (?,?,?) ' .
 			'ON DUPLICATE KEY UPDATE `value` = `value` + ?';
