@@ -53,14 +53,22 @@ function config() {
 function handleRequest() {
 	$request = Zend\Diactoros\ServerRequestFactory::fromGlobals();
 
+	# We are only interested in the path after fs.php, so /fs/fs.php/filename should map to /filename
 	global $_SERVER;
-
 	$path = isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : "";
-	$request = $request->withAttribute(REQUEST_ATTR_PATH, $path);
+	$request = $request->withRequestTarget($path);
 
 	list($keyManager, $bucket, $acls, $accessManager, $events, $stats) = config();
 	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events, $stats);
-	$server->handleRequest($request, $path);
+	$response = $server->handleRequest($request);
+
+	if ($response != NULL) {
+		if ($response instanceof Zend\Diactoros\Response\JsonResponse && isset($request->getQueryParams()['pretty'])) {
+			$response = $response->withEncodingOptions($response->getEncodingOptions() | JSON_PRETTY_PRINT);
+		}
+		$emitter = new Zend\Diactoros\Response\SapiEmitter();
+		$emitter->emit($response);
+	}
 }
 
 handleRequest();

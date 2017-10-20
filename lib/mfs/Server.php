@@ -1,7 +1,5 @@
 <?php
 
-const REQUEST_ATTR_PATH = 'mfs:request::path';
-
 class Server {
 	private $bucket;
 	private $authenticators;
@@ -12,7 +10,6 @@ class Server {
 
 	private $request;
 	private $params;
-	private $path;
 	private $username;
 
 	public function __construct($bucket, $authenticators, $acls, $accessManager, $events, $stats) {
@@ -26,7 +23,7 @@ class Server {
 
 	// return [$name, $resource, callable]; or Exception
 	private function getHandler($request) {
-		$path = $request->getAttribute(REQUEST_ATTR_PATH);
+		$path = $request->getRequestTarget();
 		$queryParams = $request->getQueryParams();
 
 		if (isset($queryParams['debug'])) {
@@ -70,10 +67,9 @@ class Server {
 		}
 	}
 
-	public function handleRequest($request, $path) {
+	public function handleRequest($request) {
 		$this->request = $request;
 		$this->params = $request->getQueryParams();
-		$this->path = $path;
 
 		$name = "invalid-request";
 		$response = null;
@@ -117,13 +113,7 @@ class Server {
 			$response = new Zend\Diactoros\Response\JsonResponse($errorBody, $code);
 		}
 
-		if ($response != NULL) {
-			if ($response instanceof Zend\Diactoros\Response\JsonResponse && isset($this->params['pretty'])) {
-				$response = $response->withEncodingOptions($response->getEncodingOptions() | JSON_PRETTY_PRINT);
-			}
-			$emitter = new Zend\Diactoros\Response\SapiEmitter();
-			$emitter->emit($response);
-		}
+		return $response;
 	}
 
 	public function handleFetchPrometheusMetrics() {
@@ -169,7 +159,7 @@ class Server {
 	public function handlePutObjectACL() {
 		$newACL = $this->request->getBody()->getContents();
 
-		$this->bucket->updateObjectACL($this->path, $newACL);
+		$this->bucket->updateObjectACL($this->request->getRequestTarget(), $newACL);
 
 		return new Zend\Diactoros\Response\EmptyResponse(204);
 	}
@@ -208,7 +198,7 @@ class Server {
 	}
 
 	public function handleDeleteObject() {
-		$found = $this->bucket->deleteObject($this->path);
+		$found = $this->bucket->deleteObject($this->request->getRequestTarget());
 
 		if (!$found) {
 			throw new Exception('Not found', 404);
@@ -224,13 +214,13 @@ class Server {
 		}
 
 		$data = file_get_contents('php://input');
-		$this->bucket->putObject($this->path, $data, $acl);
+		$this->bucket->putObject($this->request->getRequestTarget(), $data, $acl);
 
 		return new Zend\Diactoros\Response\EmptyResponse(201);
 	}
 
 	public function handleGetObject() {
-		$info = $this->bucket->getObjectInfo($this->path);
+		$info = $this->bucket->getObjectInfo($this->request->getRequestTarget());
 
 		if ($info == NULL) {
 			throw new Exception('Not found', 404);
@@ -246,7 +236,7 @@ class Server {
 			return new Zend\Diactoros\Response\EmptyResponse(200, $headers);
 		} else {
 			$headers['content-length'] = $info['size'];
-			$stream = $this->bucket->getObject($this->path);
+			$stream = $this->bucket->getObject($this->request->getRequestTarget());
 			if ($stream == null) {
 				throw new Exception('Not found', 404);
 			}
@@ -258,7 +248,7 @@ class Server {
 		$text = "";
 		$text .= "Host: " . $this->request->getUri()->getHost() . "\n";
 		$text .= "Method: " . $this->request->getMethod() ."\n";
-		$text .= "Path: " . $this->request->getAttribute(REQUEST_ATTR_PATH) ."\n";
+		$text .= "Path: " . $this->request->getRequestTarget() ."\n";
 		$text .= "\n";
 		$text .= "Headers: " . var_export($this->request->getHeaders(), true) ."\n";
 		$text .= "Params: " . json_encode($this->params, JSON_UNESCAPED_SLASHES) . "\n";
