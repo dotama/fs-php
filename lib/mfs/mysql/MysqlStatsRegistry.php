@@ -8,6 +8,14 @@ class MysqlStatsRegistry implements StatsRegistry {
 		$this->pdo = $pdo;
 	}
 
+	private function mapLabelsToTag($labels) {
+		$output = "";
+		foreach($labels as $key => $value) {
+			$output .= ",${key}=\"${value}\"";
+		}
+		return substr($output, 1);
+	}
+
 	public function getMetrics() {
 		$sql = 'SELECT name, labels, value FROM `mfs_stats`';
 		$stmt = $this->pdo->prepare($sql);
@@ -18,7 +26,7 @@ class MysqlStatsRegistry implements StatsRegistry {
 		foreach($rows AS $row) {
 			$result[] = array(
 				'name' => $row['name'],
-				'labels' => json_decode($row['labels']),
+				'tags' => $this->mapLabelsToTag(json_decode($row['labels'])),
 				'value' => $row['value']
 			);
 		}

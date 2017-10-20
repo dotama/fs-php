@@ -124,14 +124,15 @@ class Server {
 			}
 			# should becomes
 			# "thisisthekey{these=are,the=tags} thisisthevalue\n"
-			$mtags = "";
-			if (isset($metric['tags'])) {
-					$mtags .= $metric['tags'];
+			$mtags = "${tags}";
+
+			if (isset($metric['tags']) && !empty($metric['tags'])) {
+				if (!empty($mtags)) {
+					$mtags .= ",";
+				}
+
+				$mtags .= $metric['tags'];
 			}
-			if (!empty($mtags) && !empty($tags)) {
-				$mtags .= ",";
-			}
-			$mtags .= $tags;
 			$body .= $metric['name'] . '{' . $mtags . '} ' . $metric['value'] . "\n";
 		}
 
