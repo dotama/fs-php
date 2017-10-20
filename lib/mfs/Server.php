@@ -99,6 +99,7 @@ class Server {
 			if ($e->getCode() != 0) {
 				$code = $e->getCode();
 			}
+			$this->stats->counter_inc('api_http_requests_failed', ['handler' => $name, 'code' => $code]);
 			$this->sendError($e, $code);
 		}
 	}
