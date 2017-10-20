@@ -108,7 +108,8 @@ class Server {
 			$this->bucket->getMetrics(),
 			$this->accessManager->getMetrics(),
 			$this->acls->getMetrics(),
-			$this->authenticators->getMetrics()
+			$this->authenticators->getMetrics(),
+			$this->stats->getMetrics()
 		);
 
 		# Render
