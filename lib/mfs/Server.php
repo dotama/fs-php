@@ -6,6 +6,7 @@ class Server {
 	private $acls;
 	private $accessManager;
 	private $events;
+	private $stats;
 
 	private $headers;
 	private $params;
@@ -14,12 +15,13 @@ class Server {
 	private $path;
 	private $username;
 
-	public function __construct($bucket, $authenticators, $acls, $accessManager, $events) {
+	public function __construct($bucket, $authenticators, $acls, $accessManager, $events, $stats) {
 		$this->bucket = $bucket;
 		$this->authenticators = new RequestAuthenticatorSet($authenticators);
 		$this->acls = $acls;
 		$this->accessManager = $accessManager;
 		$this->events = $events;
+		$this->stats = $stats;
 	}
 
 	// return [$name, $resource, callable]; or Exception
@@ -73,6 +75,8 @@ class Server {
 
 		try {
 			list($name, $resource, $handler) = $this->getHandler();
+
+			$this->stats->counter_inc('api_http_requests_total', ['handler' => $name]);
 
 			switch($name) {
 			// Public functions need no auth check.

@@ -1,10 +1,10 @@
 <?php
+
 ini_set('track_errors', 1);
 date_default_timezone_set('UTC');
 
 require_once(__DIR__ . '/vendor/autoload.php');
 require_once(__DIR__ . '/lib/mfs/autoload.php');
-
 
 function config() {
 	$accessManager = new AccessManager();
@@ -19,13 +19,21 @@ function config() {
 		die('$bucketPath must be configured in fs.config.php - empty');
 	}
 
+	# construct the database connection, if configured
+	if (isset ($pdo_dsn)) {
+		$pdo = new PDO($pdo_dsn, $pdo_username, $pdo_passwd, $pdo_options);
+
+		$stats = new MysqlStatsRegistry($pdo);
+	} else {
+		$stats = new InmemoryStatsRegistry();
+	}
+
 	# $keyManager is allowed to be reset by the config.
 	if ($keyManager != null) {
 		$authenticators[] = new BasicAuthenticator($keyManager);
 	}
 	$acls = ACLs::defaultACLs();
 
-	global $DOC;
 	$bucket = new LocalBucket($acls, $bucketPath);
 
 	# Load further configuration files from bucket itself
@@ -37,7 +45,7 @@ function config() {
 			require($bucket->toDiskPath($path));
 		}
 	}
-	return [$authenticators, $bucket, $acls, $accessManager, $events];
+	return [$authenticators, $bucket, $acls, $accessManager, $events, $stats];
 }
 
 function handleRequest() {
@@ -63,8 +71,8 @@ function handleRequest() {
 		$headers[strtolower($key)] = $value;
 	}
 
-	list($keyManager, $bucket, $acls, $accessManager, $events) = config();
-	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events);
+	list($keyManager, $bucket, $acls, $accessManager, $events, $stats) = config();
+	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events, $stats);
 	$server->handleRequest($host, $method, $path, $headers, $params);
 }
 
