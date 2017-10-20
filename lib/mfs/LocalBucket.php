@@ -103,7 +103,7 @@ class LocalBucket {
 		if (is_dir($diskPath)) {
 			return NULL;
 		}
-		return file_get_contents($diskPath);
+		return fopen($diskPath, 'r');
 	}
 
 	public function deleteObject($path) {

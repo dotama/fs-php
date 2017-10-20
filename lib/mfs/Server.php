@@ -1,5 +1,7 @@
 <?php
 
+const REQUEST_ATTR_PATH = 'mfs:request::path';
+
 class Server {
 	private $bucket;
 	private $authenticators;
@@ -8,10 +10,8 @@ class Server {
 	private $events;
 	private $stats;
 
-	private $headers;
+	private $request;
 	private $params;
-	private $host;
-	private $method;
 	private $path;
 	private $username;
 
@@ -25,58 +25,64 @@ class Server {
 	}
 
 	// return [$name, $resource, callable]; or Exception
-	private function getHandler() {
-		if (isset($this->params['debug'])) {
-			return ['SendDebug', $this->path, 'handleDebug'];
+	private function getHandler($request) {
+		$path = $request->getAttribute(REQUEST_ATTR_PATH);
+		$queryParams = $request->getQueryParams();
+
+		if (isset($queryParams['debug'])) {
+			return ['SendDebug', $path, 'handleDebug'];
 		}
-		switch ($this->method) {
+
+		switch ($request->getMethod()) {
 		case "HEAD":
-			if ($this->path == "/" || $this->path == "") {
+			if ($path == "/" || $path == "") {
 				throw new Exception("HEAD not supported here", 405);
 			} else {
-				$info = $this->bucket->getObjectInfo($this->path);
+				$info = $this->bucket->getObjectInfo($path);
 				if ($this->acls->allowsUnauthorizedRead($info['acl'])) {
-					return ['GetPublicObject', $this->path, 'handleGetObject'];
+					return ['GetPublicObject', $path, 'handleGetObject'];
 				}
-				return ['GetObject', $this->path, 'handleGetObject'];
+				return ['GetObject', $path, 'handleGetObject'];
 			}
 		case "GET":
-			if (isset($this->params['metrics'])) {
+			if (isset($queryParams['metrics'])) {
 				return ['FetchPrometheusMetrics', '*', 'handleFetchPrometheusMetrics'];
-			} else if ($this->path == "/" || $this->path == "") {
-				return ['ListObjects', empty($this->params['prefix']) ? '/' : $this->params['prefix'], 'handleListObjects'];
+			} else if ($path == "/" || $path == "") {
+				return ['ListObjects', empty($queryParams['prefix']) ? '/' : $queryParams['prefix'], 'handleListObjects'];
 			} else {
-				$info = $this->bucket->getObjectInfo($this->path);
+				$info = $this->bucket->getObjectInfo($path);
 				if ($this->acls->allowsUnauthorizedRead($info['acl'])) {
-					return ['GetPublicObject', $this->path, 'handleGetObject'];
+					return ['GetPublicObject', $path, 'handleGetObject'];
 				}
-				return ['GetObject', $this->path, 'handleGetObject'];
+				return ['GetObject', $path, 'handleGetObject'];
 
 			}
 		case "PUT":
-			if (isset($this->params['acl'])) {
-				return ['PutObjectACL', $this->path, 'handlePutObjectACL'];
+			if (isset($queryParams['acl'])) {
+				return ['PutObjectACL', $path, 'handlePutObjectACL'];
 			} else {
-				return ['PutObject', $this->path, 'handlePutObject'];
+				return ['PutObject', $path, 'handlePutObject'];
 			}
 		case "DELETE":
-			return ['DeleteObject', $this->path, 'handleDeleteObject'];
+			return ['DeleteObject', $path, 'handleDeleteObject'];
 		default:
 			throw new Exception('Method not allowed', 405);
 		}
 	}
 
-	public function handleRequest($host, $method, $path, $headers, $params) {
-		$this->headers = $headers;
-		$this->params = $params;
-		$this->host = $host;
-		$this->method = $method;
+	public function handleRequest($request, $path) {
+		$this->request = $request;
+		$this->params = $request->getQueryParams();
 		$this->path = $path;
 
+		$name = "invalid-request";
+		$response = null;
 		try {
-			list($name, $resource, $handler) = $this->getHandler();
-
-			$this->stats->counter_inc('api_http_requests_total', ['handler' => $name]);
+			try {
+				list($name, $resource, $handler) = $this->getHandler($request);
+			} finally {
+				$this->stats->counter_inc('api_http_requests_total', ['handler' => $name]);
+			}
 
 			switch($name) {
 			// Public functions need no auth check.
@@ -86,7 +92,7 @@ class Server {
 			default:
 				$this->requiresAuthentication($name, $resource);
 			}
-			call_user_func([$this, $handler]);
+			$response = call_user_func([$this, $handler]);
 
 			# If errors occur, this is normally never reached. so we only publish success events.
 			$this->events->Publish(array(
@@ -95,12 +101,28 @@ class Server {
 				'resource' => $resource
 			));
 		} catch (Exception $e) {
+			// Handlers MUST throw an exception for internal server errors
+			// Handler CAN throw an exception for servers that should be treated as failed by Sysops
 			$code = 500;
 			if ($e->getCode() != 0) {
 				$code = $e->getCode();
 			}
 			$this->stats->counter_inc('api_http_requests_failed', ['handler' => $name, 'code' => $code]);
-			$this->sendError($e, $code);
+
+			$errorBody = array(
+				'error' => true,
+				'message' => $e->getMessage(),
+				'code' => $code,
+			);
+			$response = new Zend\Diactoros\Response\JsonResponse($errorBody, $code);
+		}
+
+		if ($response != NULL) {
+			if ($response instanceof Zend\Diactoros\Response\JsonResponse && isset($this->params['pretty'])) {
+				$response = $response->withEncodingOptions($response->getEncodingOptions() | JSON_PRETTY_PRINT);
+			}
+			$emitter = new Zend\Diactoros\Response\SapiEmitter();
+			$emitter->emit($response);
 		}
 	}
 
@@ -137,16 +159,19 @@ class Server {
 			$body .= $metric['name'] . '{' . $mtags . '} ' . $metric['value'] . "\n";
 		}
 
-		header('Content-Type: plain/text; version=0.0.4');
-		print ($body);
+		$headers = [
+			'Content-Type' => 'plain/text; version=0.0.4',
+		];
+
+		return new Zend\Diactoros\Response\TextResponse($body, 200, $headers);
 	}
 
 	public function handlePutObjectACL() {
-		$newACL = file_get_contents('php://input');
+		$newACL = $this->request->getBody()->getContents();
 
 		$this->bucket->updateObjectACL($this->path, $newACL);
 
-		header("HTTP/1.1 204 No Content");
+		return new Zend\Diactoros\Response\EmptyResponse(204);
 	}
 
 	public function handleListObjects() {
@@ -159,7 +184,7 @@ class Server {
 			if ($this->params['delimiter'] == '/') {
 				$showCommonPrefixes = true;
 			} else {
-				$this->sendError(new Exception('Invalid parameter: Parameter "delimiter" only supports "/"', 400), 400);
+				throw new Exception('Invalid parameter: Parameter "delimiter" only supports "/"', 400);
 			}
 		}
 
@@ -179,29 +204,29 @@ class Server {
 			$response['common-prefixes'] = $outCommonsPrefixes;
 		}
 
-		$this->sendJson($response);
+		return new Zend\Diactoros\Response\JsonResponse($response);
 	}
 
 	public function handleDeleteObject() {
 		$found = $this->bucket->deleteObject($this->path);
 
 		if (!$found) {
-			$this->sendError(new Exception('Not found', 404), 404);
+			throw new Exception('Not found', 404);
 		}
 
-		header("HTTP/1.1 204 No Content");
+		return new Zend\Diactoros\Response\EmptyResponse(204);
 	}
 
 	public function handlePutObject() {
 		$acl = NULL;
-		if (!empty($this->headers['x-acl'])) {
-			$acl = $this->headers['x-acl'];
+		if ($this->request->hasHeader('x-acl')) {
+			$acl = $this->request->getHeaderLine('x-acl');
 		}
 
 		$data = file_get_contents('php://input');
 		$this->bucket->putObject($this->path, $data, $acl);
 
-		header("HTTP/1.1 201 Created");
+		return new Zend\Diactoros\Response\EmptyResponse(201);
 	}
 
 	public function handleGetObject() {
@@ -211,74 +236,38 @@ class Server {
 			throw new Exception('Not found', 404);
 		}
 
-		header('x-acl: ' . $info['acl']);
-		if ($this->method == "GET") {
-			header('Content-Length: '. $info['size']);
+		$headers = array(
+			'x-acl' => $info['acl'],
+			'content-length' => '0',
+			'content-type' => $info['mtime']
+		);
+
+		if ($this->request->getMethod() == "HEAD") {
+			return new Zend\Diactoros\Response\EmptyResponse(200, $headers);
 		} else {
-			header("Content-Length: 0");
-		}
-		header('Content-Type: ' . $info['mime']);
-		header("HTTP/1.1 200 OK");
-		if ($this->method == "GET") {
-			$data = $this->bucket->getObject($this->path);
-			echo $data;
+			$headers['content-length'] = $info['size'];
+			$stream = $this->bucket->getObject($this->path);
+			if ($stream == null) {
+				throw new Exception('Not found', 404);
+			}
+			return new Zend\Diactoros\Response($stream, 200, $headers);
 		}
 	}
 
 	private function handleDebug() {
-		header('Content-Type: text/plain');
+		$text = "";
+		$text .= "Host: " . $this->request->getUri()->getHost() . "\n";
+		$text .= "Method: " . $this->request->getMethod() ."\n";
+		$text .= "Path: " . $this->request->getAttribute(REQUEST_ATTR_PATH) ."\n";
+		$text .= "\n";
+		$text .= "Headers: " . var_export($this->request->getHeaders(), true) ."\n";
+		$text .= "Params: " . json_encode($this->params, JSON_UNESCAPED_SLASHES) . "\n";
+		$text .= "\n";
+		$text .= var_export($this->request, true) . "\n";
+		$text .= "\n";
+		$text .= var_export($this->getHandler($this->request), true) . "\n";
 
-		echo "Host: " . $this->host . "\n";
-		echo "Method: " . $this->method ."\n";
-		echo "Path: " . $this->path ."\n";
-		echo "\n";
-		echo "Headers: " . json_encode($this->headers, JSON_UNESCAPED_SLASHES) . "\n";
-		echo "Params: " . json_encode($this->params, JSON_UNESCAPED_SLASHES) . "\n";
-	}
-
-	private function sendError($exception, $code = 400) {
-		switch ($code) {
-		case 400:
-			header("HTTP/1.1 400 Bad Request");
-			break;
-		case 401:
-			header('HTTP/1.1 401 Unauthorized');
-			break;
-		case 403:
-			header("HTTP/1.1 403 Forbidden");
-			break;
-		case 404:
-			header("HTTP/1.1 404 Not Found");
-			break;
-		case 405:
-			header("HTTP/1.1 405 Method Not Allowed");
-			break;
-		case 500:
-			header("HTTP/1.1 500 Internal Server Errror");
-			break;
-		}
-
-		header("Content-Type: application/json");
-
-		$response = array(
-			'error' => true,
-			'message' => $exception->getMessage(),
-			'code' => $exception->getCode()
-		);
-		$options = JSON_UNESCAPED_SLASHES;
-		if (isset($this->params['pretty'])) {
-			$options |= JSON_PRETTY_PRINT;
-		}
-		die(json_encode($response, $options)."\n");
-	}
-
-	private function sendJson($json) {
-		header('Content-Type: application/json');
-		$options = JSON_UNESCAPED_SLASHES;
-		if (isset($this->params['pretty'])) {
-			$options |= JSON_PRETTY_PRINT;
-		}
-		die(json_encode($json, $options)."\n");
+		return new Zend\Diactoros\Response\TextResponse($text);
 	}
 
 	private function requiresAuthentication($permission, $prefix) {
@@ -303,7 +292,7 @@ class Server {
 	}
 
 	private function checkAuthentication() {
-		$userid = $this->authenticators->authenticate($this->path, $this->params, $this->headers);
+		$userid = $this->authenticators->authenticate($this->request);
 		if ($userid !== null) {
 			$this->username = $userid;
 			return true;

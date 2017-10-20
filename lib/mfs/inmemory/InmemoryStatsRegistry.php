@@ -11,5 +11,7 @@ class InmemoryStatsRegistry implements StatsRegistry {
 	}
 
 	public function counter_inc($key, $labels = [], $val = 1) {
+		$l = json_encode($labels);
+		error_log("Stats: Increment $key with $l by $val.");
 	}
 }

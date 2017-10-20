@@ -41,7 +41,7 @@ it_should_get_an_access_denied_without_authentication() {
   test "401" = "${result}"
   assertJSONContains "./output" '.error' 'true'
   assertJSONContains "./output" '.message' 'Authentication required'
-  assertJSONNotContains "./output" '.objects' '/lib/ACL.xml'
+  assertJSONNotContains "./output" '.objects' '/lib/mfs/ACL.xml'
 
 }
 
@@ -57,7 +57,7 @@ it_listObjects_works() {
   assertJSONContains "./output" '.delimiter' '/'
   assertJSONContains "./output" '.objects[] | .key' '/phpunit.xml'
   assertJSONContains "./output" '."common-prefixes"[]' '/lib/'
-  assertJSONNotContains "./output" '.objects[] | .key' '/lib/ACL.xml'
+  assertJSONNotContains "./output" '.objects[] | .key' '/lib/mfs/ACL.xml'
 }
 
 
@@ -69,7 +69,7 @@ it_should_only_return_the_objects_matching_the_given_prefix() {
   assertJSONContains "./output" '.prefix' '/phpunit.xml'
   assertJSONNotContains "./output" '.delimiter' '/'
   assertJSONContains "./output" '.objects[] | .key' '/phpunit.xml'
-  assertJSONNotContains "./output" '.objects[] | .key' '/lib/ACL.xml'
+  assertJSONNotContains "./output" '.objects[] | .key' '/lib/mfs/ACL.xml'
   assertJSONNotContains "./output" '."common-prefixes"' '/lib/'
 }
 
@@ -78,7 +78,7 @@ it_should_return_all_objects_recursively_by_default() {
   result=$(curl $WITHAUTH "$ENDPOINT?prefix=/li" $OPTS)
   test "200" = "$result"
   assertJSONContains "./output" '.prefix' '/li'
-  assertJSONContains "./output" '.objects[] | .key' '/lib/ACL.php'
+  assertJSONContains "./output" '.objects[] | .key' '/lib/mfs/ACL.php'
   assertJSONNotContains "./output" '.objects[] | .key' '/phpunit.xml'
   assertJSONNotContains "./output" '."common-prefixes"' '/lib/'
 }
@@ -90,7 +90,7 @@ it_should_return_all_objects_with_the_given_prefix_but_not_recursively() {
   assertJSONContains "./output" '.prefix' '/li'
   assertJSONContains "./output" '.delimiter' '/'
   assertJSONNotContains "./output" '.objects' '/phpunit.xml'
-  assertJSONNotContains "./output" '.objects' '/lib/ACL.php'
+  assertJSONNotContains "./output" '.objects' '/lib/mfs/ACL.php'
   assertJSONContains "./output" '."common-prefixes"[]' '/lib/'
 }
 

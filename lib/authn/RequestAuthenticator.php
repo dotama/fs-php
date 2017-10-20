@@ -4,12 +4,10 @@ interface RequestAuthenticator {
 	// Authenticate the given request represented by URL, query params and headers.
 	// In case the user can be identified, an ID must be returned.
 	//
-	// @param $url string
-	// @param $query array
-	// @param $headers array
+	// @param $request PSR-7 RequestInterface
 	//
 	// @return string|null
-	function authenticate($url, $query, $headers);
+	function authenticate($request);
 }
 
 
@@ -20,9 +18,10 @@ class RequestAuthenticatorSet {
 	}
 
 	// authenticate checks if any configured authenticator can authenticate the given request.
-	public function authenticate($path, $params, $headers) {
+	public function authenticate($request) {
 		foreach ($this->set as $authenticator) {
-			$userid = $authenticator->authenticate($path, $params, $headers);
+			$userid = $authenticator->authenticate($request);
+
 			if ($userid != null) {
 				if (!is_string($userid) || empty($userid)) {
 					header("HTTP/1.1 503 Internal Server Errror");

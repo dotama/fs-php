@@ -19,16 +19,19 @@ class JWTAndSessionAuthenticator implements RequestAuthenticator {
     session_cache_limiter("");
   }
 
-  public function authenticate($url, $params, $headers) {
-    if (isset($headers['authenticate'])) {
-      $h = $headers['authenticate'];
-      $s = mb_split(" ", $h, 2);
-      if (mb_strtolower($s[0]) == $this->scope) {
-        $userid = $this->authenticate_bearer($s[1]);
-        if ($userid != null) {
-          session_start();
-          $_SESSION['userid'] = $userid;
-          return $userid;
+  public function authenticate($request) {
+    if ($request->hasHeader('Authorization')) {
+      $authHeaderLines = $request->getHeader('Authorization');
+
+      foreach($authHeaderLines as $h) {
+        $s = mb_split(" ", $h, 2);
+        if (mb_strtolower($s[0]) == $this->scope) {
+          $userid = $this->authenticate_bearer($s[1]);
+          if ($userid != null) {
+            session_start();
+            $_SESSION['userid'] = $userid;
+            return $userid;
+          }
         }
       }
     }

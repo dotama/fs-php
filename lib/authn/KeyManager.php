@@ -5,26 +5,31 @@ class BasicAuthenticator implements RequestAuthenticator, MetricsProvider {
 	public function __construct($keyManager) {
 		$this->keyManager = $keyManager;
 	}
-	public function authenticate($_url, $_query, $headers) {
-		if (empty($headers['authorization'])) {
+	public function authenticate($request) {
+		if (!$request->hasHeader('Authorization')) {
 			return null;
 		}
-		$auth = $headers['authorization'];
-		$fields = explode(" ", $auth);
+		$authHeaderLines = $request->getHeader('Authorization');
 
-		if (sizeof($fields) != 2) {
-			return null;
-		}
-		if ($fields[0] != "Basic") {
-			return null;
-		}
+		foreach($authHeaderLines as $auth) {
+			$fields = explode(" ", $auth);
 
-		$credentials = explode(":", base64_decode($fields[1]));
-		if (sizeof($credentials) != 2) {
-			return null;
-		}
+			if (sizeof($fields) != 2) {
+				continue;
+			}
+			if ($fields[0] != "Basic") {
+				continue;
+			}
 
-		if ($this->keyManager->validCredentials($credentials[0], $credentials[1])) {
+			$credentials = explode(":", base64_decode($fields[1]));
+			if (sizeof($credentials) != 2) {
+				continue;
+			}
+
+			if (!$this->keyManager->validCredentials($credentials[0], $credentials[1])) {
+				continue;
+			}
+
 			return $credentials[0];
 		}
 

@@ -51,31 +51,16 @@ function config() {
 }
 
 function handleRequest() {
+	$request = Zend\Diactoros\ServerRequestFactory::fromGlobals();
+
 	global $_SERVER;
 
-	$host = $_SERVER['HTTP_HOST'];
-	$method = $_SERVER['REQUEST_METHOD'];
 	$path = isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : "";
-	$params = $_GET;
-	if (!function_exists('getallheaders')) {
-		$headers = array();
-		foreach ($_SERVER as $name => $value) {
-			/* RFC2616 (HTTP/1.1) defines header fields as case-insensitive entities. */
-			if (strtolower(substr($name, 0, 5)) == 'http_') {
-				$headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
-			}
-		}
-	} else {
-	   $headers = getallheaders();
-	}
-
-	foreach($headers AS $key => $value) {
-		$headers[strtolower($key)] = $value;
-	}
+	$request = $request->withAttribute(REQUEST_ATTR_PATH, $path);
 
 	list($keyManager, $bucket, $acls, $accessManager, $events, $stats) = config();
 	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events, $stats);
-	$server->handleRequest($host, $method, $path, $headers, $params);
+	$server->handleRequest($request, $path);
 }
 
 handleRequest();

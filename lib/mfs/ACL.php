@@ -32,7 +32,7 @@ class ACLs {
 				return $acl;
 			}
 		}
-		return NULL;
+		return null; # throw new Exception('Unknown ACL', 500);
 	}
 
 	public function allowsUnauthorizedRead($aclName) {
