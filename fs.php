@@ -22,7 +22,9 @@ function config() {
 	# construct the database connection, if configured
 	if (isset ($pdo_dsn)) {
 		$pdo = new PDO($pdo_dsn, $pdo_username, $pdo_passwd, $pdo_options);
-
+		$pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
+		$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		$stats = new MysqlStatsRegistry($pdo);
 	} else {
 		$stats = new InmemoryStatsRegistry();
