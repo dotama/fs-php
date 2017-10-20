@@ -25,7 +25,7 @@ class RequestAuthenticatorSet {
 			$userid = $authenticator->authenticate($path, $params, $headers);
 			if ($userid != null) {
 				if (!is_string($userid) || empty($userid)) {
-					header("HTTP/1.1 500 Internal Server Errror");
+					header("HTTP/1.1 503 Internal Server Errror");
 					die('{"error": true, "message": "Invalid authenticator result."}');
 				}
 				return $userid;
