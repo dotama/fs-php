@@ -122,6 +122,9 @@ class Server {
 				[0.1, 0.2, 0.3, 0.45, 0.9, 1.5],
 				$duration
 			);
+
+			$this->stats->counter_inc('php_peak_memory_usage_sum', [], memory_get_peak_usage());
+			$this->stats->counter_inc('php_peak_memory_usage_counter');
 		}
 
 		return $response;

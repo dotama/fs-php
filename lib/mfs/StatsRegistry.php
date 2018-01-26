@@ -1,5 +1,6 @@
 <?php
 
+// Default implementation
 trait Histogram {
 	public function histogram($key, $labels, $buckets, $value) {
 		$l = json_encode($labels);
