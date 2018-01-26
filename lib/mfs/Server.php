@@ -110,7 +110,7 @@ class Server {
 				'message' => $e->getMessage(),
 				'code' => $code,
 			);
-			$response = new Zend\Diactoros\Response\JsonResponse($errorBody, $code);
+			$response = $this->createJsonResponse($errorBody, $code);
 		}
 
 		return $response;
@@ -194,7 +194,7 @@ class Server {
 			$response['common-prefixes'] = $outCommonsPrefixes;
 		}
 
-		return new Zend\Diactoros\Response\JsonResponse($response);
+		return $this->createJsonResponse($response);
 	}
 
 	public function handleDeleteObject() {
@@ -242,6 +242,16 @@ class Server {
 			}
 			return new Zend\Diactoros\Response($stream, 200, $headers);
 		}
+	}
+
+	private function createJsonResponse($body, $code = 200, $headers = []) {
+		$r = new Zend\Diactoros\Response\JsonResponse($body, $code, $headers);
+
+		if (isset($this->request->getQueryParams()['pretty'])) {
+			$r = $r->withEncodingOptions($r->getEncodingOptions() | JSON_PRETTY_PRINT);
+		}
+
+		return $r;
 	}
 
 	private function handleDebug() {

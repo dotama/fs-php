@@ -60,15 +60,12 @@ function handleRequest() {
 
 	list($keyManager, $bucket, $acls, $accessManager, $events, $stats) = config();
 	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events, $stats);
-	$response = $server->handleRequest($request);
 
-	if ($response != NULL) {
-		if ($response instanceof Zend\Diactoros\Response\JsonResponse && isset($request->getQueryParams()['pretty'])) {
-			$response = $response->withEncodingOptions($response->getEncodingOptions() | JSON_PRETTY_PRINT);
-		}
-		$emitter = new Zend\Diactoros\Response\SapiEmitter();
-		$emitter->emit($response);
-	}
+	$zendServer = Zend\Diactoros\Server::createServerFromRequest(function($request, $response, $done) use ($server)
+	{
+		return $server->handleRequest($request);
+	}, $request);
+	$zendServer->listen();
 }
 
 handleRequest();
