@@ -73,11 +73,13 @@ class Server {
 
 		$name = "invalid-request";
 		$response = null;
+		$startTime = microtime(true);
+
 		try {
 			try {
 				list($name, $resource, $handler) = $this->getHandler($request);
 			} finally {
-				$this->stats->counter_inc('api_http_requests_total', ['handler' => $name]);
+				
 			}
 
 			switch($name) {
@@ -111,6 +113,15 @@ class Server {
 				'code' => $code,
 			);
 			$response = $this->createJsonResponse($errorBody, $code);
+		} finally {
+			$this->stats->counter_inc('api_http_requests_total', ['handler' => $name]);
+
+			$duration = microtime(true) - $startTime;
+			$this->stats->histogram('api_http_requests_duration_seconds',
+				['handler' => $name],
+				[100, 200, 300, 450, 900, 1500],
+				$duration
+			);
 		}
 
 		return $response;
