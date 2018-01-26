@@ -3,6 +3,8 @@
 require_once (__DIR__ . '/../StatsRegistry.php');
 
 class InmemoryStatsRegistry implements StatsRegistry {
+	use Histogram;
+
 	public function __construct() {
 	}
 

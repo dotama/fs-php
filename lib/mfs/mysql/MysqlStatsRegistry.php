@@ -3,6 +3,8 @@
 require_once (__DIR__ . '/../StatsRegistry.php');
 
 class MysqlStatsRegistry implements StatsRegistry {
+	use Histogram;
+	
 	private $pdo;
 	public function __construct($pdo) {
 		$this->pdo = $pdo;
@@ -38,32 +40,5 @@ class MysqlStatsRegistry implements StatsRegistry {
 		$sql = 'INSERT DELAYED INTO `mfs_stats` (`name`, `labels`, `value`) VALUES (?,?,?) ' .
 			'ON DUPLICATE KEY UPDATE `value` = `value` + ?';
 		$this->pdo->prepare($sql)->execute(array($name, $l, $inc, $inc));
-	}
-
-	public function histogram($key, $labels, $buckets, $value) {
-		$l = json_encode($labels);
-
-		$deltas = array(
-			$key . '_sum' => $value,
-			$key . '_count' => 1,
-		);
-
-		# http_request_duration_seconds_bucket{le="0.1"}
-		# http_request_duration_seconds_sum
-		# http_request_duration_seconds_count
-
-		$this->counter_inc($key . '_sum', $labels, $value);
-		$this->counter_inc($key . '_count', $labels, 1);
-
-		foreach ($buckets as $b) {
-			if ($value <= $b) {
-				$l = $labels;
-				$l['le'] = $b;
-
-				$this->counter_inc($key . '_bucket', $labels, $value);
-			}
-		}
-		$labels['le'] = '+Inf';
-		$this->counter_inc($key . '_bucket', $labels, $value);
 	}
 }
