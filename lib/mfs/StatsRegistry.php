@@ -21,7 +21,7 @@ trait Histogram {
 				$l = $labels;
 				$l['le'] = $b;
 
-				$this->counter_inc($key . '_bucket', $labels, $value);
+				$this->counter_inc($key . '_bucket', $l, $value);
 			}
 		}
 		$labels['le'] = '+Inf';
