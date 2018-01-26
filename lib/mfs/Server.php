@@ -119,7 +119,7 @@ class Server {
 			$duration = microtime(true) - $startTime;
 			$this->stats->histogram('api_http_requests_duration_seconds',
 				['handler' => $name],
-				[100, 200, 300, 450, 900, 1500],
+				[0.1, 0.2, 0.3, 0.45, 0.9, 1.5],
 				$duration
 			);
 		}
