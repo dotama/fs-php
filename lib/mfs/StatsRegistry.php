@@ -18,7 +18,7 @@ trait Histogram {
 		$this->counter_inc($key . '_count', $labels, 1);
 
 		foreach ($buckets as $b) {
-			if ($value <= $b) {
+			if ($b <= $value) {
 				$l = $labels;
 				$l['le'] = $b;
 
