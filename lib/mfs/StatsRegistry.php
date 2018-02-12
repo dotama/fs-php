@@ -5,26 +5,19 @@ trait Histogram {
 	public function histogram($key, $labels, $buckets, $value) {
 		$l = json_encode($labels);
 
-		$deltas = array(
-			$key . '_sum' => $value,
-			$key . '_count' => 1,
-		);
-
-		# http_request_duration_seconds_bucket{le="0.1"}
-		# http_request_duration_seconds_sum
-		# http_request_duration_seconds_count
-
 		$this->counter_inc($key . '_sum', $labels, $value);
 		$this->counter_inc($key . '_count', $labels, 1);
 
 		foreach ($buckets as $b) {
-			if ($b <= $value) {
+			if ($b >= $value) {
 				$l = $labels;
 				$l['le'] = $b;
 
 				$this->counter_inc($key . '_bucket', $l, $value);
 			}
 		}
+
+		# always increase the +Inf bucket
 		$labels['le'] = '+Inf';
 		$this->counter_inc($key . '_bucket', $labels, $value);
 	}
