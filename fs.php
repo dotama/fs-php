@@ -58,9 +58,11 @@ function handleRequest() {
 	$path = isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : "";
 	$request = $request->withRequestTarget($path);
 
+	# Server
 	list($keyManager, $bucket, $acls, $accessManager, $events, $stats) = config();
 	$server = new Server($bucket, $keyManager, $acls, $accessManager, $events, $stats);
 
+	# Dispatch
 	$zendServer = Zend\Diactoros\Server::createServerFromRequest(function($request, $response, $done) use ($server)
 	{
 		return $server->handleRequest($request);
