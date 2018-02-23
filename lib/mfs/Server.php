@@ -243,7 +243,7 @@ class Server {
 		$headers = array(
 			'x-acl' => $info['acl'],
 			'content-length' => '0',
-			'content-type' => $info['mtime']
+			'content-type' => $info['mime']
 		);
 
 		if ($this->request->getMethod() == "HEAD") {
