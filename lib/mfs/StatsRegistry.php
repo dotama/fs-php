@@ -13,13 +13,13 @@ trait Histogram {
 				$l = $labels;
 				$l['le'] = $b;
 
-				$this->counter_inc($key . '_bucket', $l, $value);
+				$this->counter_inc($key . '_bucket', $l, 1);
 			}
 		}
 
 		# always increase the +Inf bucket
 		$labels['le'] = '+Inf';
-		$this->counter_inc($key . '_bucket', $labels, $value);
+		$this->counter_inc($key . '_bucket', $labels, 1);
 	}
 }
 
