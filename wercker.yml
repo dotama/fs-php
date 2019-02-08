@@ -9,7 +9,7 @@ build:
         - install-packages:
             packages: git unzip jq
         #- mbrevda/composer-install@1.0.1
-        - uk-hando/composer-install:
+        - bashaus/composer-install:
             dev: true
         - script:
             name: Run Unit Tests
