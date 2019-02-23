@@ -1,6 +1,8 @@
 <?php
 
-class PolicyTest extends PHPUnit_Framework_TestCase {
+use PHPUnit\Framework\TestCase;
+
+class PolicyTest extends TestCase {
   public function testDeny() {
     $policy = new Policy();
     $policy->deny();

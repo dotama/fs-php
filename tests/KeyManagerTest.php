@@ -1,6 +1,7 @@
 <?php
+use PHPUnit\Framework\TestCase;
 
-class KeyManagerTest extends PHPUnit_Framework_TestCase {
+class KeyManagerTest extends TestCase {
   public function testSimple() {
     $keyManager = new KeyManager();
   	$keyManager->addKey('test', 'test');

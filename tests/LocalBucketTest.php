@@ -1,6 +1,7 @@
 <?php
+use PHPUnit\Framework\TestCase;
 
-class LocalBucketTest {
+class LocalBucketTest extends TestCase {
   private function givenLocalBucket() {
     $acls = ACLs::defaultACLs();
     $bucket = new LocalBucket($acls, "./data");
@@ -14,7 +15,7 @@ class LocalBucketTest {
     ];
     $bucket = $this->givenLocalBucket();
 
-    foreach ($diskPaths AS $input => $output) {
+    foreach ($paths AS $input => $output) {
       try {
         $result = $bucket->toDiskPath($input);
         $this->fail();
@@ -63,7 +64,7 @@ class LocalBucketTest {
       $this->assertEquals(27, $obj['size']);
       $this->assertEquals('private', $obj['acl']);
       $this->assertEquals('text/plain', $obj['mime']);
-      $this->assertNotEmpty(0, $obj['mtime']);
+      $this->assertNotEmpty($obj['mtime']);
 
       // Test reading non-recursive
       $objs = array();
@@ -77,7 +78,7 @@ class LocalBucketTest {
       $objs = array();
       $prefixes = array();
       $bucket->listObjects("/folder", true, $objs, $prefixes);
-      $this->assertContains("/folder", $prefixes);
+      $this->assertContains("/folder/", $prefixes);
       $this->assertEquals(1, sizeof($objs));
       $this->assertEquals('/folder.txt', $objs[0]['key']);
 

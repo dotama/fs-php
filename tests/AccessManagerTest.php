@@ -1,6 +1,8 @@
 <?php
 
-class AccessManagerTest extends PHPUnit_Framework_TestCase {
+use PHPUnit\Framework\TestCase;
+
+class AccessManagerTest extends TestCase {
   public function givenAccessManagerWithReadOnlyPolicy() {
     $accessManager = new AccessManager();
     $accessManager->newPolicy()
