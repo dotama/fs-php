@@ -2,6 +2,11 @@ box: php
 
 build:
     steps:
+        - mbrevda/github-status:
+            token: $GITHUB_NOTIFY_TOKEN
+            context: wercker-build
+            msg: build in process
+
         - script:
             name: Validate PHP files
             code: |
@@ -61,6 +66,12 @@ build:
       - wercker/slack-notifier@1.2.1:
           url: $DEPLOY_SLACK_URL
           notify_on: failed
+      - mbrevda/github-status:
+          token: $GITHUB_NOTIFY_TOKEN
+          context: wercker-build
+          msg: Build finished
+          fail: Build failed
+
 deploy:
     steps:
         - script:
