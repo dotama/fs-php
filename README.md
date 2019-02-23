@@ -21,3 +21,8 @@ Features:
    * Complex Conditions based on per-request variables
 * Prometheus text-metrics support
 * No database needed - everything written to disk
+
+## This Repo
+
+* Automatic PRs via https://dependabot.com/
+* CI via https://wercker.com [![wercker status](https://app.wercker.com/status/91e3f6a841880b8e3e9327c02b684aa4/s/master "wercker status")](https://app.wercker.com/project/byKey/91e3f6a841880b8e3e9327c02b684aa4)
