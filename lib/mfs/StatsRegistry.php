@@ -3,8 +3,6 @@
 // Default implementation
 trait Histogram {
 	public function histogram($key, $labels, $buckets, $value) {
-		$l = json_encode($labels);
-
 		$this->counter_inc($key . '_sum', $labels, $value);
 		$this->counter_inc($key . '_count', $labels, 1);
 
