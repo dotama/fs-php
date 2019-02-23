@@ -1,6 +1,6 @@
 {
   "require": {
-    "firebase/php-jwt": "3.*",
+    "firebase/php-jwt": "5.*",
     "zendframework/zend-diactoros": "^1.6"
   },
   "require-dev": {
