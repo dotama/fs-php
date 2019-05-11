@@ -1,5 +1,6 @@
 {
   "require": {
+    "php": "5.6.30",
     "firebase/php-jwt": "5.*",
     "zendframework/zend-diactoros": "^1.6"
   },
